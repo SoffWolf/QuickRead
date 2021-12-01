@@ -12,8 +12,8 @@ from datasets import load_dataset, DatasetDict,load_from_disk
 from zipfile import ZipFile
 import os
 
-def load_dataset():
-    reddit_dataset_raw = load_dataset("reddit", download_mode="reuse_cache_if_exists")
+def custom_load_dataset():
+    reddit_dataset_raw = load_dataset("reddit") #, download_mode="reuse_cache_if_exists")
     print(reddit_dataset_raw)
     return reddit_dataset_raw
 
@@ -60,7 +60,7 @@ if __name__=='__main__':
     white_list = ["relationships","AskReddit","relationship_advice","tifu","dating_advice","personalfinance","Advice","legaladvice","offmychest","loseit","jobs","self","BreakUps","askwomenadvice","dogs","running","pettyrevenge","needadvice","travel","Parenting","weddingplanning","Pets","Dogtraining","cats","AskDocs","college","GetMotivated","books","Cooking"]
 
     # Load dataset raw
-    reddit_dataset_raw = load_dataset()
+    reddit_dataset_raw = custom_load_dataset()
 
     # Remove extra columns
     reddit_dataset = remove_columns(reddit_dataset_raw, ["author", "body","subreddit_id","id", "normalizedBody"])
