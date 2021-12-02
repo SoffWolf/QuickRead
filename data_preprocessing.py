@@ -65,11 +65,6 @@ if __name__=='__main__':
     # Remove extra columns
     reddit_dataset = remove_columns(reddit_dataset_raw['train'], ["author", "body","subreddit_id","id", "normalizedBody"])
 
-    ##### NEED TO BE REMOVED 
-    reddit_dataset = reddit_dataset.shuffle().select(range(1000)) 
-    print("Original len = ", len(reddit_dataset))
-    ##############################
-
     # Clean blanks
     reddit_clean_blanks = reddit_dataset.filter(lambda x: filter_blanks(x))
     print("After filtering blanks len = ", len(reddit_clean_blanks))
@@ -110,6 +105,3 @@ if __name__=='__main__':
 
     # Save to disk
     dataset.save_to_disk("reddit_clean")
-
-    # Zip datataset
-    print(f"Before zipping: {os.listdir()}")
