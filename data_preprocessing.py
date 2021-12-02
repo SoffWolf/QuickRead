@@ -13,7 +13,7 @@ from datasets import load_dataset, DatasetDict,load_from_disk
 import os
 
 def custom_load_dataset():
-    reddit_dataset_raw = load_dataset("reddit"), #download_mode="reuse_cache_if_exists")
+    reddit_dataset_raw = load_dataset("reddit", cache_dir='$HF_DATASETS_CACHE', download_mode='reuse_dataset_if_exists')
     print(reddit_dataset_raw)
     return reddit_dataset_raw
 
@@ -41,12 +41,12 @@ def compute_len(example):
 
 # Split dataset into train, test, validation sets: 
 def train_test_val_split(dataset, train_size, test_size, val_size):
-    assert sum(train_size, test_size, val_size) > 1, "Sum of train_size, test_size, val_size must be 1"
+    assert (train_size + test_size +  val_size) >= 1, "Sum of train_size, test_size, val_size must be 1"
     train_test_valid = dataset.train_test_split(shuffle = True, seed = 50, test_size=test_size+val_size)
     print(train_test_valid)
 
     # Split the 30% test + valid in half test, half valid
-    test_valid = train_test_valid['test'].train_test_split(shuffle = True, seed = 50, test_size=(test_size/(test_size+val_size))*100)
+    test_valid = train_test_valid['test'].train_test_split(shuffle = True, seed = 50, test_size=(test_size/(test_size+val_size)))
     print(test_valid)
 
     # gather everyone if you want to have a single DatasetDict
@@ -66,7 +66,7 @@ if __name__=='__main__':
     reddit_dataset = remove_columns(reddit_dataset_raw['train'], ["author", "body","subreddit_id","id", "normalizedBody"])
 
     ##### NEED TO BE REMOVED 
-    reddit_dataset = reddit_dataset.shuffle().select(range(100)) 
+    reddit_dataset = reddit_dataset.shuffle().select(range(1000)) 
     print("Original len = ", len(reddit_dataset))
     ##############################
 
@@ -111,5 +111,5 @@ if __name__=='__main__':
     # Save to disk
     dataset.save_to_disk("reddit_clean")
 
-    # Zip datatset
+    # Zip datataset
     print(f"Before zipping: {os.listdir()}")
