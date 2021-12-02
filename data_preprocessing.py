@@ -9,11 +9,11 @@ Original file is located at
 
 ## pip install datasets transformers[sentencepiece]
 from datasets import load_dataset, DatasetDict,load_from_disk
-from zipfile import ZipFile
+#from zipfile import ZipFile
 import os
 
 def custom_load_dataset():
-    reddit_dataset_raw = load_dataset("reddit") #, download_mode="reuse_cache_if_exists")
+    reddit_dataset_raw = load_dataset("reddit"), #download_mode="reuse_cache_if_exists")
     print(reddit_dataset_raw)
     return reddit_dataset_raw
 
@@ -22,7 +22,7 @@ def remove_columns(dataset, column_names):
     dataset = raw dataset input
     column_names = list of strings, e.g. ["author", "body","subreddit_id","id", "normalizedBody"]
     '''
-    reddit_dataset = dataset['train'].remove_columns(column_names)
+    reddit_dataset = dataset.remove_columns(column_names)
     print(reddit_dataset)
     return reddit_dataset
 
@@ -63,7 +63,12 @@ if __name__=='__main__':
     reddit_dataset_raw = custom_load_dataset()
 
     # Remove extra columns
-    reddit_dataset = remove_columns(reddit_dataset_raw, ["author", "body","subreddit_id","id", "normalizedBody"])
+    reddit_dataset = remove_columns(reddit_dataset_raw['train'], ["author", "body","subreddit_id","id", "normalizedBody"])
+
+    ##### NEED TO BE REMOVED 
+    reddit_dataset = reddit_dataset.shuffle().select(range(100)) 
+    print("Original len = ", len(reddit_dataset))
+    ##############################
 
     # Clean blanks
     reddit_clean_blanks = reddit_dataset.filter(lambda x: filter_blanks(x))
@@ -108,10 +113,3 @@ if __name__=='__main__':
 
     # Zip datatset
     print(f"Before zipping: {os.listdir()}")
-    # file = "clean_dataset.zip"  # zip file name
-    #with ZipFile(file, 'w') as zip:
-    #zip.write("PythonGeeks.txt")  # zipping the file
-    #print("File successfully zipped")
-    #print(f"After zipping: {os.listdir()}")
-    #with ZipFile(file, 'r') as zip:
-    #zip.printdir()  
