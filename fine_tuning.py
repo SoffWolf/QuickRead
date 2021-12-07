@@ -7,19 +7,12 @@ Original file is located at
     https://colab.research.google.com/drive/1sJRjQJO8Su8kwheVSP1QgLGRDg0tATM0
 """
 
-#!pip install datasets transformers[sentencepiece]
-# Upload clean dataset, unzip and load from disk
-#from google.colab import files
-#!unzip -u "/content/drive/MyDrive/Graduation_project/reddit_sample.zip" -d "/content/reddit_clean"
 
-## TO DO: Unzip dataset file from disk
 from datasets import load_from_disk
 import torch
 from transformers import PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
 
-## TO DO: add right address
 dataset = load_from_disk("reddit_clean")
-dataset.push_to_hub("SophieTr/reddit_clean")
 
 class PegasusDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -112,6 +105,7 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
           weight_decay=0.01,               # strength of weight decay
           logging_dir='./logs',            # directory for storing logs
           logging_steps=10,
+	  push_to_hub=True	
         )
 
         trainer = Trainer(
@@ -133,6 +127,5 @@ if __name__=='__main__':
     trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset)
 
     trainer.train()
-    trainer.push_to_hub('SophieTr/distil-pegasus-reddit')
 
 ## TO DO: push model to HF Hub 

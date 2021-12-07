@@ -61,6 +61,7 @@ if __name__=='__main__':
 
     # Load dataset raw
     reddit_dataset_raw = custom_load_dataset()
+ 
 
     # Remove extra columns
     reddit_dataset = remove_columns(reddit_dataset_raw['train'], ["author", "body","subreddit_id","id", "normalizedBody"])
@@ -105,3 +106,4 @@ if __name__=='__main__':
 
     # Save to disk
     dataset.save_to_disk("reddit_clean")
+   
