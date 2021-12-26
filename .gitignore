@@ -1,1 +1,16 @@
 /reddit_clean
+$HF_DATASETS_CACHE/
+.cache/
+distill-pegasus-reddit-v1/
+fine_tuning.out
+fine_tuning_new.out
+fine_tuning_v2.out
+logs/
+reddit_clean/
+results/
+run_fine-tune.py
+submit.sh
+submit_v2.sh
+venv/
+wandb/
+
