@@ -61,7 +61,9 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset, freez
     """
     torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
-    
+    if freeze_encoder:
+        for param in model.model.encoder.parameters():
+            param.requires_grad = False
     training_args = TrainingArguments(
         output_dir=output_dir,           # output directory
         num_train_epochs=1000,           # total number of training epochs
