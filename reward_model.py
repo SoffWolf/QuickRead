@@ -7,7 +7,7 @@ class RewardModel(nn.Module):
         super(RewardModel, self).__init__()
         # self.init_scales = init_scales 
         # self.d_model = d_model
-        self.supervised_baseline= supervised_baseline
+        self.supervised_baseline =  supervised_baseline
 
         # Add a randomly initialized linear head that outputs a scalar value
         init_std = init_scales / np.sqrt(d_model + 1)  #.get(name, 1.0)
@@ -19,5 +19,5 @@ class RewardModel(nn.Module):
     def forward(self, inputs):
         x = self.supervised_baseline(inputs)
         # go through custom layer
-        r = self.head(x)
-        return r
+        reward = self.head(x)
+        return reward
