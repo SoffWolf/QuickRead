@@ -8,21 +8,51 @@ from torchtext.vocab import build_vocab_from_iterator
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
 from torchtext.data.functional import to_map_style_dataset
-import ijson
 import time
-
-
-
-#### Write the training loop here
+import ijson
+import pandas as pd
 
 # First import the json data into pandas dataframes
 numbers = [3]
+data = []
+columns = [
+    "post",
+    "split",
+    "summary1",
+    "summary2",
+    "choice"
+]
 for num in numbers:
     filename = "batch" + str(num) + ".json"
     with open(filename, 'r') as f:
-        objects = ijson.items(f, 'info.item')
-        print(list(objects)[0])
+        parser = ijson.parse(f, multiple_values=True)
+        chosen_row = []
+        summaries = []
+        for prefix, event, value in parser:
+            if (prefix, event) == ("info.post", "string"):
+                post = value
+                chosen_row.append(post)
+            elif (prefix, event) == ("split", "string"):
+                split = value
+                chosen_row.append(split)
+            elif (prefix, event) == ("summaries.item.text","string"):
+                if len(summaries) == 2:
+                    summaries = []
+                    summary1 = value
+                    summaries.append(summary1)
+                    chosen_row.append(summary1)
+                elif len(summaries) < 2:
+                    summary2 = value
+                    summaries.append(summary2)
+                    chosen_row.append(summary2)
+            elif (prefix, event) == ("choice", "number"):
+                choice = value
+                chosen_row.append(choice)
+                data.append(chosen_row)
+                # Reset
+                chosen_row = []
 
+feedback = pd.DataFrame(data, columns=columns)
 
 # Training loop
 tokenizer = AutoTokenizer.from_pretrained("SophieTr/results")
