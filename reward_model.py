@@ -3,7 +3,7 @@ import numpy as np
 
 
 class RewardModel(nn.Module):
-    def __init__(self, supervised_baseline, d_model=128, init_scales=1.0):
+    def __init__(self, supervised_baseline, d_model=1024, init_scales=1.0):
         super(RewardModel, self).__init__()
         # self.init_scales = init_scales 
         # self.d_model = d_model
