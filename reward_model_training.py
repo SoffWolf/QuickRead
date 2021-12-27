@@ -66,10 +66,13 @@ def yield_tokens(data_iter):
     for index, row in data_iter:
         row = list(row) 
         row = [post, split, summary1, summary2, choice]
-        yield [tokenizer(post), split, tokenizer(summary1), tokenizer(summary2), choice]
+        text = post + summary1 + summary2
+        yield tokenizer(text)
 
 
-vocab = build_vocab_from_iterator(yield_tokens(train_iter).values, specials=["<unk>"])
+print("start build vocab")
+vocab = build_vocab_from_iterator(yield_tokens(train_iter), specials=["<unk>"])
+print("finish build vocab")
 vocab.set_default_index(vocab["<unk>"])
 
 text_pipeline = lambda x: vocab(tokenizer(x))
@@ -96,6 +99,7 @@ def collate_batch(batch):
     sum2_list = torch.cat(sum2_list)
     return post_list.to(device), sum1_list.to(device), sum2_list.to(device), label_list.to(device), offsets1.to(device), offsets2.to(device)
 
+print("collate")
 dataloader = DataLoader(train_iter, batch_size=8, shuffle=False, collate_fn=collate_batch)
 
 num_class = 2
@@ -136,6 +140,7 @@ def train(dataloader):
             total_acc, total_count = 0, 0
             start_time = time.time()
 
+print("train")
 def evaluate(dataloader): #???
     model.eval()
     total_acc, total_count = 0, 0
@@ -148,7 +153,7 @@ def evaluate(dataloader): #???
             total_count += label.size(0)
     return total_acc/total_count
 
-
+print("evaluate")
 
 # Hyperparameters
 EPOCHS = 10 # epoch
@@ -170,23 +175,23 @@ split_train_, split_valid_ = \
 
 train_dataloader = DataLoader(split_train_, batch_size=BATCH_SIZE,
                               shuffle=True, collate_fn=collate_batch)
-valid_dataloader = DataLoader(split_valid_, batch_size=BATCH_SIZE,
-                              shuffle=True, collate_fn=collate_batch)
+# valid_dataloader = DataLoader(split_valid_, batch_size=BATCH_SIZE,
+                              #shuffle=True, collate_fn=collate_batch)
 # test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_batch)
-
+print("before training loop")
 for epoch in range(1, EPOCHS + 1):
     epoch_start_time = time.time()
     train(train_dataloader)
-    accu_val = evaluate(valid_dataloader)
+    # accu_val = evaluate(valid_dataloader)
     if total_accu is not None and total_accu > accu_val:
       scheduler.step()
     else:
        total_accu = accu_val
     print('-' * 59)
     print('| end of epoch {:3d} | time: {:5.2f}s | '
-          'valid accuracy {:8.3f} '.format(epoch,
+          'valid accuracy '.format(epoch,
                                            time.time() - epoch_start_time,
-                                           accu_val))
+                                           ))
     print('-' * 59)
 
 
