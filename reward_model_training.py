@@ -56,7 +56,8 @@ for num in numbers:
 
 # Training loop
 feedback_data = pd.DataFrame(data, columns=columns)
-tokenizer = AutoTokenizer.from_pretrained("SophieTr/results")
+# tokenizer = AutoTokenizer.from_pretrained("SophieTr/results")
+tokenizer = get_tokenizer('basic_english')
 supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/results")
 model = RewardModel(supervised_baseline)
 
@@ -67,11 +68,15 @@ def yield_tokens(data_iter):
         row = list(row) 
         row = [post, split, summary1, summary2, choice]
         text = post + summary1 + summary2
-        yield tokenizer(text)
+        return tokenizer(text)
 
+print(next(train_iter))
+print(next(train_iter))
+print("Build tokens: ", yield_tokens(train_iter))
 
 print("start build vocab")
 vocab = build_vocab_from_iterator(yield_tokens(train_iter), specials=["<unk>"])
+print("vocab: ", vocab(['start']))
 print("finish build vocab")
 vocab.set_default_index(vocab["<unk>"])
 
@@ -100,7 +105,7 @@ def collate_batch(batch):
     return post_list.to(device), sum1_list.to(device), sum2_list.to(device), label_list.to(device), offsets1.to(device), offsets2.to(device)
 
 print("collate")
-dataloader = DataLoader(train_iter, batch_size=8, shuffle=False, collate_fn=collate_batch)
+dataloader = DataLoader(feedback_data, batch_size=8, shuffle=False, collate_fn=collate_batch)
 
 num_class = 2
 vocab_size = len(vocab)
@@ -167,9 +172,10 @@ optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.1)
 total_accu = None
 # train_iter, test_iter = AG_NEWS()
-train_dataset = to_map_style_dataset(train_iter)
+train_dataset = to_map_style_dataset(feedback_data)   # train_iter
 # test_dataset = to_map_style_dataset(test_iter)
 num_train = int(len(train_dataset) * 0.95)
+print("num_train: ", num_train)
 split_train_, split_valid_ = \
     random_split(train_dataset, [num_train, len(train_dataset) - num_train])
 
