@@ -3,7 +3,7 @@ import numpy as np
 
 
 class RewardModel(nn.Module):
-    def __init__(self, supervised_baseline, d_model=1024, init_scales=1.0):
+    def __init__(self, supervised_baseline, d_model=1024, init_scales=0.0):
         super(RewardModel, self).__init__()
         # self.init_scales = init_scales 
         # self.d_model = d_model
@@ -16,8 +16,14 @@ class RewardModel(nn.Module):
         nn.init.zeros_(head.bias)
         self.head = head
 
-    def forward(self, inputs):
-        x = self.supervised_baseline(inputs)
+    def forward(self, post_tokens, summary_tokens):
+        x = self.supervised_baseline(post)
+        y = self.NeuralNet(summary)
+        z = torch.stack(x, y)
+        z = self.n2(z)
         # go through custom layer
-        reward = self.head(x)
+        reward = self.head(z)
         return reward
+
+
+
