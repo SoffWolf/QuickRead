@@ -77,7 +77,6 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             weight_decay=0.01,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=50,
-            push_to_hub=True,
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -101,7 +100,6 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             weight_decay=0.01,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=10,
-            push_to_hub=True,
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -120,9 +118,9 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
 
 if __name__ == '__main__':
     dataset = load_from_disk("reddit_clean")
-    train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
-    val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
-    test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
+    train_texts, train_labels = dataset['train']['content'][:1000], dataset['train']['summary'][:1000]
+    val_texts, val_labels = dataset['valid']['content'][:1000], dataset['valid']['summary'][:1000]
+    test_texts, test_labels = dataset['test']['content'][:1000], dataset['test']['summary'][:1000]
 
     model_name = 'google/pegasus-large'  # 'google/pegasus-large'
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_data(model_name, train_texts, train_labels, val_texts,
@@ -131,4 +129,5 @@ if __name__ == '__main__':
 
     trainer.train()
 
-## TO DO: push model to HF Hub
+    ## Evaluate
+    trainer.evaluate(test_dataset)
