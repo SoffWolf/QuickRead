@@ -1,8 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, PegasusForConditionalGeneration, PegasusTokenizer
 
 # My fine-tuned
-tokenizer = AutoTokenizer.from_pretrained("SophieTr/results")
-model = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/results")
+tokenizer = AutoTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
+model = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/fine-tune-Pegasus")
  
 # Original
 model_origin = PegasusForConditionalGeneration.from_pretrained('sshleifer/distill-pegasus-xsum-16-4')
