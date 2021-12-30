@@ -22,7 +22,8 @@ columns = [
     "summary2",
     "choice"
 ]
-
+summary1 = ""
+summary2=""
 for num in numbers:
     filename = "batch" + str(num) + ".json"
     with open(filename, 'r') as f:
@@ -41,13 +42,17 @@ for num in numbers:
                     summaries = []
                     summary1 = value
                     summaries.append(summary1)
-                    chosen_row.append(summary1)
                 elif len(summaries) < 2:
                     summary2 = value
                     summaries.append(summary2)
-                    chosen_row.append(summary2)
             elif (prefix, event) == ("choice", "number"):
                 choice = value
+                if choice == 1:
+                    temp = summary1
+                    summary1 = summary2
+                    summary2 = temp
+                chosen_row.append(summary1)
+                chosen_row.append(summary2)
                 chosen_row.append(choice)
                 data.append(chosen_row)
                 # Reset
@@ -55,6 +60,7 @@ for num in numbers:
 
 
 df = pd.DataFrame(data, columns=columns)
+print(df)
 tokenizer = AutoTokenizer.from_pretrained("sshleifer/distill-pegasus-xsum-16-4")
 supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distill-pegasus-xsum-16-4")
 
@@ -64,8 +70,8 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
         self.post = [tokenizer(post, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for post in df['post']]
         self.split = [split for split in df['split']] 
-        self.summary1 = [tokenizer(text, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary1 in df['summary1']]
-        self.summary2 = [tokenizer(text, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary2 in df['summary2']]
+        self.summary1 = [tokenizer(summary1, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary1 in df['summary1']]
+        self.summary2 = [tokenizer(summary2, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary2 in df['summary2']]
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
@@ -73,10 +79,13 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.labels)
     def get_batch_labels(self, idx):
         # Fetch a batch of labels
-        return np.array(self.labels[idx])
+        return np.array(int(self.labels[idx]))
     def get_batch_posts(self, idx):
         # Fetch a batch of inputs
         return self.post[idx]
+    def get_batch_split(self, idx):
+        # Fetch a batch of inputs
+        return self.split[idx]
     def get_batch_sum1(self, idx):
         # Fetch a batch of inputs
         return self.summary1[idx]
@@ -85,10 +94,11 @@ class Dataset(torch.utils.data.Dataset):
         return self.summary2[idx]
     def __getitem__(self, idx):
         batch_post = self.get_batch_posts(idx)
+        batch_split = self.get_batch_split(idx)
         batch_sum1 = self.get_batch_sum1(idx)
         batch_sum2 = self.get_batch_sum2(idx)
         batch_labels = self.get_batch_labels(idx)
-        return batch_post, batch_sum1, batch_sum2, batch_labels
+        return batch_post, batch_split, batch_sum1, batch_sum2, batch_labels
 
 
 np.random.seed(112)
@@ -144,21 +154,19 @@ def train(model, train_data, val_data, learning_rate, epochs):
             # mask_post = post['attention_mask'].to(device)
             # mask_sum1 = sum1['attention_mask'].to(device)
             # mask_sum2 = sum2['attention_mask'].to(device)
-            post_id = tokenizer(post)['input_ids'].squeeze(1).to(device)
-            sum1_id = tokenizer(sum1)['input_ids'].squeeze(1).to(device)
-            sum2_id = tokenizer(sum2)['input_ids'].squeeze(1).to(device)
+            print(label)
+            print(type(label))
+            post_id = post['input_ids']
+            sum1_id = sum1['input_ids']
+            sum2_id = sum2['input_ids']
                     
             label = label.to(device)
             predicted_reward_1 = None
             predicted_reward_2 = None
 
-            if label == 0:
-                predicted_reward_1 = model(post_id, sum1_id)
-                predicted_reward_2 = model(post_id, sum2_id)
-            else:
-                predicted_reward_2 = model(post_id, sum1_id)
-                predicted_reward_1 = model(post_id, sum2_id)
-        
+            predicted_reward_1 = model(post_id, sum1_id)
+            predicted_reward_2 = model(post_id, sum2_id)
+                    
             
             batch_loss = criterion(predicted_reward_1 - predicted_reward_2)
             total_loss_train += batch_loss.item()
@@ -183,6 +191,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 label = label.to(device)
                 predicted_reward_1 = None
                 predicted_reward_2 = None
+                print(label)
 
                 if label == 0:
                     predicted_reward_1 = model(post_id, sum1_id)

@@ -18,7 +18,7 @@ class RewardModel(nn.Module):
         self.head = head
 
     def forward(self, post_tokens, summary_tokens):
-        x = torch.concat((post_tokens, summary_tokens), axis=1) 
+        x = torch.cat((post_tokens, summary_tokens), dim=1) 
         x = self.supervised_baseline.generate(input_ids=x)
         x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=0)
         print(x.shape)
