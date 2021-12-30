@@ -97,10 +97,14 @@ df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.8
 print(len(df_train),len(df_val), len(df_test))
 
 model = RewardModel(supervised_baseline)
-post = ""
-summary = ""
-post_id = tokenizer(post)
-sum_id = tokenizer(summary)
+post = """Title said just about all of it. I’m 28, very athletic (bike/ surf/ snowboard) and I have always wanted to do gymnastics.
+
+I like to do flips and spins off bridges and on my snowboard, and it seems to me gymnastics would be a great way to do those movements I like, in a controlled environment. The end goal of this is that it would be fun, and make me better at these movements in real life.
+
+But is it too late for me? Should 28 year old guys such as myself be content with just watching those parkour guys on youtube? Or can I learn the ways of the gymnastic jedi? BTW, I live in San Jose CA."""
+summary = "I want to do gymnastics, but I’m 28 yrs old. Is it too late for me to be a gymnaste?!"
+post_id = tokenizer(post, return_tensors="pt").input_ids
+sum_id = tokenizer(summary, return_tensors="pt").input_ids
 print(model(post_id, sum_id))
 
 # training loop
