@@ -13,4 +13,14 @@ submit.sh
 submit_v2.sh
 venv/
 wandb/
+__pycache__/reward_model.cpython-36.pyc
+__pycache__/reward_model.cpython-38.pyc
+_scratch_work_nguyent86_QuickRead_reddit_default_1.0.0_98ba5abea674d3178f7588aa6518a5510dc0c6fa8176d9653a3546d5afcb3969.lock
+bin/
+downloads/
+include/
+lib/
+lib64
+pip-selfcheck.json
+pyvenv.cfg
 
