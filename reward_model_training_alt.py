@@ -60,7 +60,6 @@ for num in numbers:
 
 
 df = pd.DataFrame(data, columns=columns)
-print(df)
 tokenizer = AutoTokenizer.from_pretrained("sshleifer/distill-pegasus-xsum-16-4")
 supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distill-pegasus-xsum-16-4")
 
@@ -68,10 +67,10 @@ supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distill-p
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
-        self.post = [tokenizer(post, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for post in df['post']]
+        self.post = [tokenizer(post, padding='max_length', return_tensors="pt") for post in df['post']]
         self.split = [split for split in df['split']] 
-        self.summary1 = [tokenizer(summary1, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary1 in df['summary1']]
-        self.summary2 = [tokenizer(summary2, padding='max_length', max_length = 512, truncation=True, return_tensors="pt") for summary2 in df['summary2']]
+        self.summary1 = [tokenizer(summary1, padding='max_length', return_tensors="pt") for summary1 in df['summary1']]
+        self.summary2 = [tokenizer(summary2, padding='max_length', return_tensors="pt") for summary2 in df['summary2']]
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
@@ -134,8 +133,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=8, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val, batch_size=8)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=1, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val, batch_size=1)
 
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -154,11 +153,13 @@ def train(model, train_data, val_data, learning_rate, epochs):
             # mask_post = post['attention_mask'].to(device)
             # mask_sum1 = sum1['attention_mask'].to(device)
             # mask_sum2 = sum2['attention_mask'].to(device)
-            print(label)
-            print(type(label))
             post_id = post['input_ids']
             sum1_id = sum1['input_ids']
             sum2_id = sum2['input_ids']
+            print("post_id: ", post_id)
+       	    print("sum1_id: ", sum1_id)
+       	    print("sum2_id: ", sum2_id)
+
                     
             label = label.to(device)
             predicted_reward_1 = None

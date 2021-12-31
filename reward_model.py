@@ -21,9 +21,13 @@ class RewardModel(nn.Module):
         x = torch.cat((post_tokens, summary_tokens), dim=1) 
         x = self.supervised_baseline.generate(input_ids=x)
         x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=0)
-        print(x.shape)
+        print("x.shape: ", x.shape)
+        print("post_tokens.shape: ", post_tokens.shape)
+        print("summary_tokens.shape: ", summary_tokens.shape)
         # go through custom layer
         reward = self.head(x.type(torch.FloatTensor))
+        print("reward: \n", reward)
+        print("reward.shape: ", reward.shape)
         return reward
 
 
