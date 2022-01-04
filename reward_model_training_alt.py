@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from torch.optim import Adam
 from tqdm import tqdm
-
+import wandb
 
 # First import the json data into pandas dataframes
 numbers = [3]
@@ -63,14 +63,12 @@ df = pd.DataFrame(data, columns=columns)
 tokenizer = AutoTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
 supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/fine-tune-Pegasus")
 
-
-
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
         self.post = [tokenizer(post, return_tensors="pt") for post in df['post']]
-        self.split = [split for split in df['split']] 
+        self.split = [split for split in df['split']]
         self.summary1 = [tokenizer(summary1, return_tensors="pt") for summary1 in df['summary1']]
-        self.summary2 = [tokenizer(summary2, return_tensors="pt") for summary2 in df['summary2']]# padding='max_length', 
+        self.summary2 = [tokenizer(summary2, return_tensors="pt") for summary2 in df['summary2']]# padding='max_length',
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
@@ -99,7 +97,6 @@ class Dataset(torch.utils.data.Dataset):
         batch_labels = self.get_batch_labels(idx)
         return batch_post, batch_split, batch_sum1, batch_sum2, batch_labels
 
-
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
@@ -108,79 +105,134 @@ print("Split the examples for train, val, test: ", len(df_train),len(df_val), le
 
 model = RewardModel(supervised_baseline)                  
 
+# WANDB
+user = "sophietr"
+project = "text-summary-reward-model"
+display_name = "experiment-2022-1-1"
+wandb.init(entity=user, project=project, name=display_name)
+
+
 # training loop
 def train(model, train_data, val_data, learning_rate, epochs):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
 
     def criterion(x):
-        return torch.log(1/(1 + torch.exp(-x)))
+        # For tracking purposes: --> DELETE later
+        print("\n x =", x)
+        s = nn.Sigmoid()
+        sigmoid_r = s(x)
+        print("\n Sigmoid = ", sigmoid_r)
+
+        # Criterion
+        ret = torch.log(sigmoid_r)
+        m = nn.LogSigmoid()
+        ret = m(x) * -1
+        print("\n ret from criterion = ", ret)
+        return ret
 
     train, val = Dataset(train_data), Dataset(val_data)
 
     train_dataloader = torch.utils.data.DataLoader(train, batch_size=1, shuffle=True)
     val_dataloader = torch.utils.data.DataLoader(val, batch_size=1)
 
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-
-    optimizer = Adam(model.parameters(), lr= learning_rate)
-
     if use_cuda:
         model = model.cuda()
+
+    optimizer = Adam(model.parameters(), lr=learning_rate)
+
+    # WANDB
+    wandb.watch(model, log="all")
 
     for epoch_num in range(epochs):
         total_acc_train = 0
         total_loss_train = 0
 
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
+            # Input
             post_id = post['input_ids'].squeeze(1).squeeze(1)
             sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
             sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
 
-                    
-            label = label.to(device)
+            label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(
+                device)
 
-            predicted_reward_1 = model(post_id, sum1_id)
-            predicted_reward_2 = model(post_id, sum2_id)
-                    
-            
-            batch_loss = criterion(predicted_reward_1 - predicted_reward_2)
+            # Output rewards
+            predicted_reward_1 = model(post_id, sum1_id, device=device)
+            predicted_reward_2 = model(post_id, sum2_id, device=device)
+            print("predicted_reward_1: ", predicted_reward_1)
+            print("predicted_reward_2: ", predicted_reward_2)
+
+            # Loss and accuracy
+            batch_loss = criterion(torch.sub(predicted_reward_1, predicted_reward_2))
             total_loss_train += batch_loss.item()
-            
-            # acc = (output.argmax(dim=1) == train_label).sum().item()
-            # total_acc_train += acc
+            print("train batch loss: ", batch_loss)
 
+            # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ???
+            acc = (predicted_reward_1 > predicted_reward_2).sum().item()
+            total_acc_train += acc
+            print("train batch acc: ", acc)
+
+            # Backward
             model.zero_grad()
             batch_loss.backward()
             optimizer.step()
-        
+
+            # Logging
+            wandb.log({"batch-loss/train-step": batch_loss,
+                       "train-batch-loss": total_loss_train,
+                       "train-batch-acc: ": total_acc_train})
+
         total_acc_val = 0
         total_loss_val = 0
 
         with torch.no_grad():
 
             for post, split, sum1, sum2, label in tqdm(val_dataloader):
+                # Input
                 post_id = post['input_ids'].squeeze(1).squeeze(1)
                 sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
                 sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
-                        
-                label = label.to(device)
 
-                predicted_reward_1 = model(post_id, sum1_id)
-                predicted_reward_2 = model(post_id, sum2_id)
-                         
-                batch_loss = criterion(predicted_reward_1 - predicted_reward_2)
+                label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(
+                    device)
+
+                # Output rewards
+                predicted_reward_1 = model(post_id, sum1_id, device=device)
+                predicted_reward_2 = model(post_id, sum2_id, device=device)
+                print("predicted_reward_1: ", predicted_reward_1)
+                print("predicted_reward_2: ", predicted_reward_2)
+
+                # Loss and accuracy
+                batch_loss = criterion(torch.sub(predicted_reward_1, predicted_reward_2))
                 total_loss_val += batch_loss.item()
+                print("eval batch loss: ", batch_loss)
 
-                
-                # acc = (output.argmax(dim=1) == val_label).sum().item()
-                # total_acc_val += acc
-        
+                acc = (predicted_reward_1 > predicted_reward_2).sum().item()
+                total_acc_val += acc
+                print("eval batch acc: ", acc)
+
+                # Logging
+                wandb.log({"batch-loss/eval-step": batch_loss,
+                           "eval-batch-loss": total_loss_val,
+                           "eval-batch-acc": total_acc_val})
+
         print(
             f'Epochs: {epoch_num + 1} | Train Loss: {total_loss_train / len(train_data): .3f} \
-            | Train Accuracy: {total_acc_train / len(train_data): .3f} \
-            | Val Loss: {total_loss_val / len(val_data): .3f} \
-            | Val Accuracy: {total_acc_val / len(val_data): .3f}')
+            | Val Loss: {total_loss_val / len(val_data): .3f}\n')
+        print(
+            f'Epochs: {epoch_num + 1} \
+              | Train Loss: {total_loss_train / len(train_data): .3f} \
+              | Train Accuracy: {total_acc_train / len(train_data): .3f} \
+              | Val Loss: {total_loss_val / len(val_data): .3f} \
+              | Val Accuracy: {total_acc_val / len(val_data): .3f}')
         torch.save(model, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num)))
+        wandb.log({"Epoch": epoch_num + 1,
+                   "Epoch-train-loss": total_loss_train / len(train_data),
+                   "Train-acc": total_acc_train / len(train_data),
+                   "Epoch-val-loss": total_loss_val / len(val_data),
+                   "Val-acc": total_acc_val / len(val_data)})
+
 
 EPOCHS = 5
 LR = 1e-6
