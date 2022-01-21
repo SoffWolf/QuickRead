@@ -257,7 +257,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                     wandb.log({ "val/batch-loss": batch_loss,
                                 "val/total-batch-loss": total_loss_val,
                                 "val/total-batch-acc": total_acc_val,
-                                "val/batch-total_acc_val-per-step": acc_per_100})
+                                "val/batch-total_acc-per-100-step": acc_per_100})
                     acc_per_100 = 0
 
         print(
