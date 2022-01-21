@@ -45,17 +45,17 @@ class RewardModel(nn.Module):
         self.head = head 
 
     def forward(self, post_tokens, summary_tokens, device=None):
-        # print(post_tokens.shape)
-        # print(summary_tokens.shape)
+        print(post_tokens.shape)
+        print(summary_tokens.shape)
         len_post = post_tokens.shape[1] 
         input_ids = torch.concat((post_tokens, summary_tokens), axis=1)
         # print(input_ids.shape)
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=1)
         # print(decoder_input_ids)
         x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        # print(x.last_hidden_state.shape)
 
         # print(input_ids)
+        print(x.last_hidden_state.shape)
         # x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=-1) #value=0 
         # go through custom layer
         
@@ -65,20 +65,20 @@ class RewardModel(nn.Module):
         else: 
           values = self.head(x)
         values = values.squeeze(dim=2)
-        # print("\n values.shape: ", values.shape)
+        print("\n values.shape: ", values.shape)
         # Call split_ 
         response_values = values[:,len_post:] 
-        # print("response_values: ", response_values)
-        # print("response_values.shape: ", response_values.shape)
+        response_values = response_values.to(device)
+        print("response_values: ", response_values)
+        print("response_values.shape: ", response_values.shape)
         # call gather_one
         # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
         # print("REWARD: ", reward)
 
-        last_response_indices = _response_indices(summary_tokens).to(device)
-       
+        last_response_indices = _response_indices(summary_tokens)
+        last_response_indices = last_response_indices.to(device)
         reward = gather_one(
             response_values, last_response_indices, dim=0
         )
 
         return reward
-
