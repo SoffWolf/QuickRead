@@ -107,6 +107,9 @@ supervised_baseline = PegasusModel.from_pretrained("google/pegasus-large") # Tob
 model = RewardModel(supervised_baseline)
 
 # WANDB 
+# import wandb
+
+# WANDB 
 user = "sophietr"
 project = "text-summary-reward-model"
 display_name = "experiment-2022-1-1"
@@ -120,13 +123,13 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     def criterion(x):
         # For tracking purposes: --> DELETE later
-        # print("\n x =", x)
-        # s = nn.Sigmoid()
-        # sigmoid_r = s(x)
-        # print("\n Sigmoid = ", sigmoid_r)
+        print("\n x =", x)
+        s = nn.Sigmoid()
+        sigmoid_r = s(x)
+        print("\n Sigmoid = ", sigmoid_r)
 
         # Criterion
-        # ret = torch.log(sigmoid_r)
+        ret = torch.log(sigmoid_r)
         m = nn.LogSigmoid()
         ret = m(x) * -1
         print("\n ret from criterion = ", ret)
@@ -148,6 +151,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
     for epoch_num in range(epochs):
         total_acc_train = 0
         total_loss_train = 0
+        acc_per_100 = 0
         step = 0
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
 
@@ -175,26 +179,28 @@ def train(model, train_data, val_data, learning_rate, epochs):
             # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
             acc = (predicted_reward_1 > predicted_reward_2).sum().item()
             total_acc_train += acc
-            print("train batch acc: ", acc)
-            print("train batch acc/step: ", acc/step)
-            print("train batch total_acc_train/step: ", total_acc_train/step)
 
             # Backward
             # model.zero_grad()
             batch_loss.backward()
             optimizer.step()
 
-            # Logging
-            wandb.log({ "train/batch-loss": batch_loss,
-                        "train/total-batch-loss": total_loss_train,
-                        "train/total-batch-acc": total_acc_train,
-                        "train/batch-acc-per-step" :acc/step, 
-                        "train/batch-total_acc_train-per-step": total_acc_train/step})
+            if step % 100 == 0:
+              acc_per_100 = total_acc_train/100
+              print("train batch total_acc_train/step: ", acc_per_100)
+              total_acc_train = 0
+              # Logging
+              wandb.log({ "train/batch-loss": batch_loss,
+                          "train/total-batch-loss": total_loss_train,
+                          "train/total-batch-acc": total_acc_train,
+                          "train/batch-acc-per-step" :acc/step, 
+                          "train/batch-total_acc_train-per-100-step": acc_per_100})
 
 
         total_acc_val = 0
         total_loss_val = 0
         step = 0
+        acc_per_100 = 0
         with torch.no_grad():
 
             for post, split, sum1, sum2, label in tqdm(val_dataloader):
@@ -220,16 +226,26 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
                 acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
                 total_acc_val += acc
-                print("eval batch acc: ", acc)
-                print("eval batch acc/step: ", acc/step)
-                print("eval batch total_acc_val/step: ", total_acc_val/step)
+                # print("eval batch acc: ", acc)
+                # print("eval batch acc/step: ", acc/step)
+                # print("eval batch total_acc_val/step: ", total_acc_val/step)
 
-                # Logging
-                wandb.log({ "val/batch-loss": batch_loss,
-                            "val/total-batch-loss": total_loss_val,
-                            "val/total-batch-acc": total_acc_val,
-                            "val/batch-acc-per-step" :acc/step, 
-                            "val/batch-total_acc_val-per-step": total_acc_val/step})
+                # # Logging
+                # wandb.log({ "val/batch-loss": batch_loss,
+                #             "val/total-batch-loss": total_loss_val,
+                #             "val/total-batch-acc": total_acc_val,
+                #             "val/batch-acc-per-step" :acc/step, 
+                #             "val/batch-total_acc_val-per-step": total_acc_val/step})
+                if step % 100 == 0:
+                    acc_per_100 = total_acc_val/100
+                    print("val batch total_acc_val/100 step: ", acc_per_100)
+                    total_acc_val = 0
+                    # Logging
+                    wandb.log({ "val/batch-loss": batch_loss,
+                                "val/total-batch-loss": total_loss_val,
+                                "val/total-batch-acc": total_acc_val,
+                                "val/batch-acc-per-step" :acc/step, 
+                                "val/batch-total_acc_val-per-step": acc_per_100})
 
         print(
             f'Epochs: {epoch_num + 1} | Train Loss: {total_loss_train / len(train_data): .3f} \
@@ -246,8 +262,6 @@ def train(model, train_data, val_data, learning_rate, epochs):
                    "train/Train-acc": total_acc_train / len(train_data),
                    "val/Epoch-val-loss": total_loss_val / len(val_data),
                    "val/Val-acc": total_acc_val / len(val_data) })
-
-
 
 EPOCHS = 5
 LR = 1e-6
