@@ -159,6 +159,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
             post_id = post['input_ids'].squeeze(1).squeeze(1)
             sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
             sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
+            print(post_id.shape, sum1_id.shape, sum2_id.shape)
 
             label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
             
