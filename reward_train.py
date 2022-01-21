@@ -159,16 +159,19 @@ def train(model, train_data, val_data, learning_rate, epochs):
             post_id = post['input_ids'].squeeze(1).squeeze(1)
             sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
             sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
-            print(post_id.shape, sum1_id.shape, sum2_id.shape)
-
+            # print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
             
-            # Output rewards
-            predicted_reward_1 = model(post_id, sum1_id, device=device)
-            predicted_reward_2 = model(post_id, sum2_id, device=device)
-            print("predicted_reward_1: ", predicted_reward_1)
-            print("predicted_reward_2: ",predicted_reward_2)
-
+            try:
+                # Output rewards
+                predicted_reward_1 = model(post_id, sum1_id, device=device)
+                predicted_reward_2 = model(post_id, sum2_id, device=device)
+                print("predicted_reward_1: ", predicted_reward_1)
+                print("predicted_reward_2: ",predicted_reward_2)
+            except: 
+                print("ERROR IN TRAIN LOOP")
+                print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+                continue
             optimizer.zero_grad()
 
             # Loss and accuracy
