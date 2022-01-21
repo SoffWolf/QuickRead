@@ -11,6 +11,7 @@ import numpy as np
 from torch.optim import Adam
 from tqdm import tqdm
 import wandb
+import os
 
 # First import the json data into pandas dataframes
 numbers = [3]
@@ -169,7 +170,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 print("predicted_reward_1: ", predicted_reward_1)
                 print("predicted_reward_2: ",predicted_reward_2)
             except: 
-                print("ERROR IN TRAIN LOOP")
+                print("ERROR IN TRAIN LOOP (1)")
                 print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
                 continue
             optimizer.zero_grad()
@@ -178,11 +179,12 @@ def train(model, train_data, val_data, learning_rate, epochs):
             batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
             total_loss_train += batch_loss.item()
             step += 1
-            print("train batch loss: ", batch_loss)
+            # print("train batch loss: ", batch_loss)
             
             # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
             acc = (predicted_reward_1 > predicted_reward_2).sum().item()
             total_acc_train += acc
+            acc_per_100 += acc
 
             # Backward
             # model.zero_grad()
@@ -190,15 +192,14 @@ def train(model, train_data, val_data, learning_rate, epochs):
             optimizer.step()
 
             if step % 100 == 0:
-              acc_per_100 = total_acc_train/100
-              print("train batch total_acc_train/step: ", acc_per_100)
-              total_acc_train = 0
-              # Logging
-              wandb.log({ "train/batch-loss": batch_loss,
-                          "train/total-batch-loss": total_loss_train,
-                          "train/total-batch-acc": total_acc_train,
-                          "train/batch-acc-per-step" :acc/step, 
-                          "train/batch-total_acc_train-per-100-step": acc_per_100})
+                acc_per_100 = acc_per_100/100
+                #   print("train batch total_acc_train/step: ", acc_per_100)
+                # Logging
+                wandb.log({ "train/batch-loss": batch_loss,
+                            "train/total-batch-loss": total_loss_train,
+                            "train/total-batch-acc": total_acc_train,
+                            "train/batch-total_acc_train-per-100-step": acc_per_100})
+                acc_per_100 = 0
 
 
         total_acc_val = 0
@@ -216,11 +217,22 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
                 label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
 
-                # Output rewards
-                predicted_reward_1 = model(post_id, sum1_id, device=device)
-                predicted_reward_2 = model(post_id, sum2_id, device=device)
-                print("predicted_reward_1: ", predicted_reward_1)
-                print("predicted_reward_2: ",predicted_reward_2)
+                try:
+                    # Output rewards
+                    predicted_reward_1 = model(post_id, sum1_id, device=device)
+                    predicted_reward_2 = model(post_id, sum2_id, device=device)
+                    print("predicted_reward_1: ", predicted_reward_1)
+                    print("predicted_reward_2: ",predicted_reward_2)
+                except: 
+                    print("ERROR IN TRAIN LOOP (2)")
+                    print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+                    continue
+
+                # # Output rewards
+                # predicted_reward_1 = model(post_id, sum1_id, device=device)
+                # predicted_reward_2 = model(post_id, sum2_id, device=device)
+                # print("predicted_reward_1: ", predicted_reward_1)
+                # print("predicted_reward_2: ",predicted_reward_2)
 
                 # Loss and accuracy
                 batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
@@ -230,10 +242,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
                 acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
                 total_acc_val += acc
-                # print("eval batch acc: ", acc)
-                # print("eval batch acc/step: ", acc/step)
-                # print("eval batch total_acc_val/step: ", total_acc_val/step)
-
+                acc_per_100 += acc
                 # # Logging
                 # wandb.log({ "val/batch-loss": batch_loss,
                 #             "val/total-batch-loss": total_loss_val,
@@ -241,15 +250,15 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 #             "val/batch-acc-per-step" :acc/step, 
                 #             "val/batch-total_acc_val-per-step": total_acc_val/step})
                 if step % 100 == 0:
-                    acc_per_100 = total_acc_val/100
-                    print("val batch total_acc_val/100 step: ", acc_per_100)
-                    total_acc_val = 0
+                    acc_per_100 = acc_per_100/100
+                    # print("val batch total_acc_val/100 step: ", acc_per_100)
+                    
                     # Logging
                     wandb.log({ "val/batch-loss": batch_loss,
                                 "val/total-batch-loss": total_loss_val,
                                 "val/total-batch-acc": total_acc_val,
-                                "val/batch-acc-per-step" :acc/step, 
                                 "val/batch-total_acc_val-per-step": acc_per_100})
+                    acc_per_100 = 0
 
         print(
             f'Epochs: {epoch_num + 1} | Train Loss: {total_loss_train / len(train_data): .3f} \
