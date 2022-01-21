@@ -20,8 +20,6 @@ class RewardModel(nn.Module):
         self.head = head 
 
     def forward(self, post_tokens, summary_tokens, device=None):
-        print(post_tokens.shape)
-        print(summary_tokens.shape)
         len_post = post_tokens.shape[1] 
         input_ids = torch.concat((post_tokens, summary_tokens), axis=1)
         # print(input_ids.shape)
@@ -40,11 +38,8 @@ class RewardModel(nn.Module):
         else: 
           values = self.head(x)
         values = values.squeeze(dim=2)
-        print("\n values.shape: ", values.shape)
         # Call split_ 
         response_values = values[:,len_post:] 
-        print("response_values: ", response_values)
-        print("response_values.shape: ", response_values.shape)
         # call gather_one
         reward = torch.gather(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
         print("REWARD: ", reward)

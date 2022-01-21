@@ -100,20 +100,11 @@ class Dataset(torch.utils.data.Dataset):
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-# print("Split the examples for train, val, test: ", len(df_train),len(df_val), len(df_test))
-
-
-# model = RewardModel(supervised_baseline)                  
-from transformers import PegasusTokenizer, PegasusModel
-
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
 supervised_baseline = PegasusModel.from_pretrained("google/pegasus-large") # Tobechange
 
 
 model = RewardModel(supervised_baseline)
-
-# WANDB
-import wandb
 
 # WANDB 
 user = "sophietr"
@@ -129,13 +120,13 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     def criterion(x):
         # For tracking purposes: --> DELETE later
-        print("\n x =", x)
-        s = nn.Sigmoid()
-        sigmoid_r = s(x)
-        print("\n Sigmoid = ", sigmoid_r)
+        # print("\n x =", x)
+        # s = nn.Sigmoid()
+        # sigmoid_r = s(x)
+        # print("\n Sigmoid = ", sigmoid_r)
 
         # Criterion
-        ret = torch.log(sigmoid_r)
+        # ret = torch.log(sigmoid_r)
         m = nn.LogSigmoid()
         ret = m(x) * -1
         print("\n ret from criterion = ", ret)
