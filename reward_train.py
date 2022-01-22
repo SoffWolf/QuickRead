@@ -269,12 +269,29 @@ def train(model, train_data, val_data, learning_rate, epochs):
               | Train Accuracy: {total_acc_train / len(train_data): .3f} \
               | Val Loss: {total_loss_val / len(val_data): .3f} \
               | Val Accuracy: {total_acc_val / len(val_data): .3f}')
-        torch.save(model, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num)))
+        
         wandb.log({"Epoch": epoch_num + 1,
                    "train/Epoch-train-loss": total_loss_train / len(train_data),
                    "train/Train-acc": total_acc_train / len(train_data),
                    "val/Epoch-val-loss": total_loss_val / len(val_data),
                    "val/Val-acc": total_acc_val / len(val_data) })
+
+        # Print model's state_dict
+        print("Model's state_dict:")
+        for param_tensor in model.state_dict():
+            print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+
+        # Print optimizer's state_dict
+        print("Optimizer's state_dict:")
+        for var_name in optimizer.state_dict():
+            print(var_name, "\t", optimizer.state_dict()[var_name])
+        
+        # Save model
+        checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
+        # torch.save(model.state_dict(), PATH)
+        torch.save(checkpoint, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num+1)))
+
+        # torch.save(model, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num+1)))
 
 EPOCHS = 5
 LR = 1e-6
