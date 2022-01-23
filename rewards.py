@@ -45,17 +45,17 @@ class RewardModel(nn.Module):
         self.head = head 
 
     def forward(self, post_tokens, summary_tokens, device=None):
-        print(post_tokens.shape)
-        print(summary_tokens.shape)
+        print("Forwards 1")
+        
         len_post = post_tokens.shape[1] 
         input_ids = torch.concat((post_tokens, summary_tokens), axis=1)
-        # print(input_ids.shape)
+        print("GOT input_ids")
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=1)
-        # print(decoder_input_ids)
+        print("GOT decoder_input_ids")
         x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-
+        print("Call supervised baseline!")	
         # print(input_ids)
-        print(x.last_hidden_state.shape)
+        #print(x.last_hidden_state.shape)
         # x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=-1) #value=0 
         # go through custom layer
         
@@ -73,12 +73,12 @@ class RewardModel(nn.Module):
         print("response_values.shape: ", response_values.shape)
         # call gather_one
         # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
-        # print("REWARD: ", reward)
+        print("BEFORE REWARD: ")
 
         last_response_indices = _response_indices(summary_tokens)
         last_response_indices = last_response_indices.to(device)
         reward = gather_one(
             response_values, last_response_indices, dim=0
         )
-
+        print("AFTER REWARDS")
         return reward

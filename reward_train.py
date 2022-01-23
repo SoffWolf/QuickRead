@@ -14,7 +14,7 @@ import wandb
 import os
 
 # First import the json data into pandas dataframes
-numbers = number = [i+3 for i in range (18)] + [22]
+numbers = [3] #[i+3 for i in range (18)] + [22]
 data = []
 columns = [
     "post",
@@ -26,7 +26,8 @@ columns = [
 summary1 = ""
 summary2=""
 for num in numbers:
-    filename = "/reward_training_data/batch" + str(num) + ".json"
+    filename = "batch" + str(num) + ".json"
+    print(filename)
     with open(filename, 'r') as f:
         parser = ijson.parse(f, multiple_values=True)
         chosen_row = []

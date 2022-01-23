@@ -11,7 +11,7 @@ SOURCE:
 
 from datasets import load_from_disk
 import torch
-from transformers import PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
+from transformers import PegasusModel, PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
 
 class PegasusDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -77,6 +77,8 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             weight_decay=0.01,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=50,
+            push_to_hub=True,
+            hub_model_id="SophieTr/fine-tune-PegasusModel",
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -100,6 +102,8 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             weight_decay=0.01,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=10,
+            push_to_hub=True,
+            hub_model_id="SophieTr/fine-tune-PegasusModel",
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -118,16 +122,17 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
 
 if __name__ == '__main__':
     dataset = load_from_disk("reddit_clean")
-    train_texts, train_labels = dataset['train']['content'][:1000], dataset['train']['summary'][:1000]
-    val_texts, val_labels = dataset['valid']['content'][:1000], dataset['valid']['summary'][:1000]
-    test_texts, test_labels = dataset['test']['content'][:1000], dataset['test']['summary'][:1000]
+    train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
+    val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
+    test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
     model_name = 'google/pegasus-large'  # 'google/pegasus-large'
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_data(model_name, train_texts, train_labels, val_texts,
                                                                        val_labels, test_texts, test_labels)
-    trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset, freeze_encoder=True)
+    trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset)
 
     trainer.train()
-
-    ## Evaluate
     trainer.evaluate(test_dataset)
+    trainer.push_to_hub()
+
+## TO DO: push model to HF Hub
