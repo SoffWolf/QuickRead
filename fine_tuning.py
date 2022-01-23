@@ -59,6 +59,100 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
     """
     Prepare configurations and base model for fine-tuning
     """
+
+The Conversation
+1974
+PG
+1h 53m
+IMDb RATING
+7.8
+/10
+108K
+YOUR RATING
+￼
+Rate
+POPULARITY
+2,408
+211
+Cast & crew
+User reviews
+Trivia
+IMDbPro
+￼All topics
+￼
+￼
+￼
+￼
+ 
+Play trailer with sound1:56
+4 VIDEOS
+99+ PHOTOS
+Drama
+Mystery
+Thriller
+A paranoid, secretive surveillance expert has a crisis of conscience when he suspects that the couple he is spying on will be murdered.
+
+Director
+Francis Ford Coppola
+Writer
+Francis Ford Coppola
+Stars
+Gene HackmanJohn CazaleAllen Garfield
+See production, box office & company info
+￼
+Add to Watchlist
+￼
+424
+User reviews
+170
+Critic reviews
+85
+Metascore
+Nominated for 3 Oscars
+14 wins & 16 nominations total
+Videos
+4
+￼
+Trailer 1:56
+The Conversation
+￼
+Trailer 1:56
+The Conversation - Restoration Trailer
+￼
+Clip 1:36
+'The Conversation' | 45th Anniversary Mashup
+￼
+Video 28:39
+Sneak Previews Season 3 Episode 10
+Photos
+163
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+Top cast
+Edit
+￼
+Gene Hackman
+as Harry Caul
+￼
+John Cazale
+as Stan
+￼
+Allen Garfield
+as Bernie Moran
+￼
+Frederic Forrest
+as Mark
+￼
     torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
     

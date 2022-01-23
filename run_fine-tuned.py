@@ -12,6 +12,7 @@ inp = "In this work we propose the Transformer, a model architecture eschewing r
 input_ids = tokenizer(inp, return_tensors="pt").input_ids
 outputs = model.generate(input_ids=input_ids)
 print("Generated:", tokenizer.batch_decode(outputs, skip_special_tokens=True))
+print("length: ", output.shape, "   ", input_ids.shape)
 
 input_ids_benchmark = tokenizer_origin(inp, return_tensors="pt").input_ids
 outputs_benchmark = model_origin.generate(input_ids=input_ids_benchmark)
