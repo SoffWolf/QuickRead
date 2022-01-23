@@ -11,7 +11,7 @@ SOURCE:
 
 from datasets import load_from_disk
 import torch
-from transformers import PegasusModel, PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
+from transformers import PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
 
 class PegasusDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -66,21 +66,17 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
     if val_dataset is not None:
         training_args = TrainingArguments(
             output_dir=output_dir,  # output directory
-            num_train_epochs=1,  # total number of training epochs
-            per_device_train_batch_size=128,  # batch size per device during training, can increase if memory allows
-            per_device_eval_batch_size=128,  # batch size for evaluation, can increase if memory allows
-            save_steps=5000,  # number of updates steps before checkpoint saves
+            num_train_epochs=2000,  # total number of training epochs
+            per_device_train_batch_size=1,  # batch size per device during training, can increase if memory allows
+            per_device_eval_batch_size=1,  # batch size for evaluation, can increase if memory allows
+            save_steps=500,  # number of updates steps before checkpoint saves
             save_total_limit=5,  # limit the total amount of checkpoints and deletes the older checkpoints
-            lr_scheduler_type="cosine",
             evaluation_strategy='steps',  # evaluation strategy to adopt during training
             eval_steps=100,  # number of update steps before evaluation
             warmup_steps=500,  # number of warmup steps for learning rate scheduler
             weight_decay=0.01,  # strength of weight decay
-            learning_rate=6.35e-05,
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=50,
-            push_to_hub=True,
-            hub_model_id="SophieTr/fine-tune-Pegasus-large",
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -96,18 +92,14 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
     else:
         training_args = TrainingArguments(
             output_dir=output_dir,  # output directory
-            num_train_epochs=1,  # total number of training epochs
-            per_device_train_batch_size=128,  # batch size per device during training, can increase if memory allows
+            num_train_epochs=2000,  # total number of training epochs
+            per_device_train_batch_size=1,  # batch size per device during training, can increase if memory allows
             save_steps=500,  # number of updates steps before checkpoint saves
             save_total_limit=5,  # limit the total amount of checkpoints and deletes the older checkpoints
-            lr_scheduler_type="cosine",
             warmup_steps=500,  # number of warmup steps for learning rate scheduler
             weight_decay=0.01,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=10,
-            learning_rate= 6.35e-05,
-            push_to_hub=True,
-            hub_model_id="SophieTr/fine-tune-Pegasus-large",
             report_to="wandb",
             load_best_model_at_end=True,
             fp16=True,
@@ -126,17 +118,16 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
 
 if __name__ == '__main__':
     dataset = load_from_disk("reddit_clean")
-    train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
-    val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
-    test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
+    train_texts, train_labels = dataset['train']['content'][:1000], dataset['train']['summary'][:1000]
+    val_texts, val_labels = dataset['valid']['content'][:1000], dataset['valid']['summary'][:1000]
+    test_texts, test_labels = dataset['test']['content'][:1000], dataset['test']['summary'][:1000]
 
     model_name = 'google/pegasus-large'  # 'google/pegasus-large'
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_data(model_name, train_texts, train_labels, val_texts,
                                                                        val_labels, test_texts, test_labels)
-    trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset)
+    trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset, freeze_encoder=True)
 
     trainer.train()
-    trainer.evaluate(test_dataset)
-    trainer.push_to_hub()
 
-## TO DO: push model to HF Hub
+    ## Evaluate
+    trainer.evaluate(test_dataset)

@@ -82,4 +82,3 @@ class RewardModel(nn.Module):
         )
 
         return reward
-
