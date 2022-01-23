@@ -14,7 +14,7 @@ import wandb
 import os
 
 # First import the json data into pandas dataframes
-numbers = [3]
+numbers = [i+3 for i in range (18)] + [22]
 data = []
 columns = [
     "post",
@@ -26,7 +26,7 @@ columns = [
 summary1 = ""
 summary2=""
 for num in numbers:
-    filename = "batch" + str(num) + ".json"
+    filename = "reward_training_data/batch" + str(num) + ".json"
     with open(filename, 'r') as f:
         parser = ijson.parse(f, multiple_values=True)
         chosen_row = []
@@ -111,10 +111,10 @@ model = RewardModel(supervised_baseline)
 # import wandb
 
 # WANDB 
-user = "sophietr"
+group = "quickread"
 project = "text-summary-reward-model"
 display_name = "experiment-2022-1-1"
-wandb.init(entity=user, project=project, name=display_name)
+wandb.init(entity=group, project=project, name=display_name)
 
 
 # training loop
@@ -157,12 +157,12 @@ def train(model, train_data, val_data, learning_rate, epochs):
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
 
             # Input
-            post_id = post['input_ids'].squeeze(1).squeeze(1)
-            sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
-            sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
-            # print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
-            label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
-            
+            post_id = post['input_ids'].squeeze(1).to(device)
+            sum1_id = sum1['input_ids'].squeeze(1).to(device)
+            sum2_id = sum2['input_ids'].squeeze(1).to(device)
+
+            print("TENSOR before: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+           
             try:
                 # Output rewards
                 predicted_reward_1 = model(post_id, sum1_id, device=device)
@@ -179,7 +179,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
             batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
             total_loss_train += batch_loss.item()
             step += 1
-            # print("train batch loss: ", batch_loss)
+            print("train batch loss: ", batch_loss)
             
             # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
             acc = (predicted_reward_1 > predicted_reward_2).sum().item()

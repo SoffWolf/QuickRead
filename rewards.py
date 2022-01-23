@@ -45,17 +45,17 @@ class RewardModel(nn.Module):
         self.head = head 
 
     def forward(self, post_tokens, summary_tokens, device=None):
-        print(post_tokens.shape)
-        print(summary_tokens.shape)
-        len_post = post_tokens.shape[1] 
-        input_ids = torch.concat((post_tokens, summary_tokens), axis=1)
-        # print(input_ids.shape)
-        decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=1)
-        # print(decoder_input_ids)
+        len_post = post_tokens.shape[-1]
+        print("Post len: ", len_post) 
+        input_ids = torch.concat((post_tokens, summary_tokens), axis=-1)
+        print("Input_ids after concat: ", input_ids.shape)
+	
+        decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
+        print("decoder_input_ids after cat:", decoder_input_ids.shape)
         x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 
         # print(input_ids)
-        print(x.last_hidden_state.shape)
+        print("x.last_hidden_state.shape: ", x.last_hidden_state.shape)
         # x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=-1) #value=0 
         # go through custom layer
         
@@ -64,12 +64,12 @@ class RewardModel(nn.Module):
           values = self.head(x.to(device))
         else: 
           values = self.head(x)
-        values = values.squeeze(dim=2)
-        print("\n values.shape: ", values.shape)
+        values = values.squeeze(dim=-1)
+        print("Values.shape: ", values.shape)
         # Call split_ 
-        response_values = values[:,len_post:] 
+        response_values = values[:, len_post:] 
         response_values = response_values.to(device)
-        print("response_values: ", response_values)
+        #print("response_values: ", response_values)
         print("response_values.shape: ", response_values.shape)
         # call gather_one
         # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
@@ -77,8 +77,9 @@ class RewardModel(nn.Module):
 
         last_response_indices = _response_indices(summary_tokens)
         last_response_indices = last_response_indices.to(device)
+        print("last_response_indices: ", last_response_indices)
         reward = gather_one(
-            response_values, last_response_indices, dim=0
+            response_values, last_response_indices, dim=-1
         )
-
+        print("Reward: ", reward)
         return reward
