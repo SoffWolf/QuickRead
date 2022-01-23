@@ -14,7 +14,7 @@ import wandb
 import os
 
 # First import the json data into pandas dataframes
-numbers = [3] #[i+3 for i in range (18)] + [22]
+numbers = [3]
 data = []
 columns = [
     "post",
@@ -27,7 +27,6 @@ summary1 = ""
 summary2=""
 for num in numbers:
     filename = "batch" + str(num) + ".json"
-    print(filename)
     with open(filename, 'r') as f:
         parser = ijson.parse(f, multiple_values=True)
         chosen_row = []
@@ -297,6 +296,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
 EPOCHS = 5
 LR = 1e-6
 train(model, df_train, df_val, LR, EPOCHS)
+
 
 
 
