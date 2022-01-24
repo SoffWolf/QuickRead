@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.functional as F
 from rewards import RewardModel
-from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
 import time
 import ijson
@@ -104,8 +103,8 @@ class Dataset(torch.utils.data.Dataset):
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
-supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large") # Tobechange
+tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
 
 model = RewardModel(supervised_baseline)

@@ -34,7 +34,7 @@ def prepare_data(model_name,
     """
     Prepare input data for model fine-tuning
     """
-    tokenizer = PegasusTokenizer.from_pretrained(model_name)
+    tokenizer = PegasusTokenizer.from_pretrained(model_name, cache_dir="HF_HOME")
     prepare_val = False if val_texts is None or val_labels is None else True
     prepare_test = False if test_texts is None or test_labels is None else True
 
@@ -57,7 +57,7 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
     Prepare configurations and base model for fine-tuning
     """
     torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
+    model = PegasusForConditionalGeneration.from_pretrained(model_name, cache_dir="HF_HOME").to(torch_device)
 
     if freeze_encoder:
         for param in model.model.encoder.parameters():
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     model_name = 'google/pegasus-large'  # 'google/pegasus-large'
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_data(model_name, train_texts, train_labels, val_texts,
                                                                        val_labels, test_texts, test_labels)
-    print("First in train dataset: ", train_dataset[0])
+    print("First in train dataset: ", train_dataset[0].shape)
     trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset)
 
     trainer.train()
