@@ -17,7 +17,7 @@ from trl.core import build_bert_batch_from_txt
 
 from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
-from ../rewards.py import RewardModel
+from ../rewards/reward_model.py import RewardModel
 
 
 config = {
