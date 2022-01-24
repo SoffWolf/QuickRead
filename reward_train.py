@@ -12,6 +12,9 @@ from torch.optim import Adam
 from tqdm import tqdm
 import wandb
 import os
+from transformers import PegasusModel, PegasusForConditionalGeneration, PegasusTokenizer, Trainer, TrainingArguments
+
+
 
 # First import the json data into pandas dataframes
 numbers = [i+3 for i in range (18)] + [22]
@@ -102,7 +105,7 @@ np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
-supervised_baseline = PegasusModel.from_pretrained("google/pegasus-large") # Tobechange
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large") # Tobechange
 
 
 model = RewardModel(supervised_baseline)

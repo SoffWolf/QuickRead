@@ -3,6 +3,8 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 
+
+
 PADDING_TOKEN = -1
 
 def first_true_indices(bools, dtype=torch.long):
@@ -52,14 +54,12 @@ class RewardModel(nn.Module):
 	
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
         print("decoder_input_ids after cat:", decoder_input_ids.shape)
-        x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 
-        # print(input_ids)
         print("x.last_hidden_state.shape: ", x.last_hidden_state.shape)
-        # x = F.pad(input=x, pad=(1, self.d_model - x.shape[1] - 1), mode='constant', value=-1) #value=0 
         # go through custom layer
-        
-        x = x.last_hidden_state
+        x = outputs[0]
+        print("shape of last hidden states: ", x.shape)
         if device is not None: 
           values = self.head(x.to(device))
         else: 
