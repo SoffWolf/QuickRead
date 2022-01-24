@@ -55,15 +55,21 @@ class RewardModel(nn.Module):
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
         print("decoder_input_ids after cat:", decoder_input_ids.shape)
         outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-
-        print("x.last_hidden_state.shape: ", x.last_hidden_state.shape)
+        #x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        #print("Outputs from PegasusConditional with head: ", outputs)
+        
         # go through custom layer
-        x = outputs[0]
-        print("shape of last hidden states: ", x.shape)
+        #x = x.last_hidden_state
+        #print("shape of last hidden states: ", outputs[0].shape)
+        x = outputs.encoder_last_hidden_state
+        print(" outputs.encoder_last_hidden_state.shape: ", outputs.encoder_last_hidden_state.shape)
+        
+        #print("Before calling head!")
         if device is not None: 
           values = self.head(x.to(device))
         else: 
           values = self.head(x)
+        #print("After calling head")
         values = values.squeeze(dim=-1)
         print("Values.shape: ", values.shape)
         # Call split_ 

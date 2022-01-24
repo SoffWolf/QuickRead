@@ -105,6 +105,8 @@ df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9
 
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+#supervised_baseline = PegasusModel.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+
 
 
 model = RewardModel(supervised_baseline)
@@ -164,7 +166,13 @@ def train(model, train_data, val_data, learning_rate, epochs):
             sum2_id = sum2['input_ids'].squeeze(1).to(device)
 
             print("TENSOR before: ", post_id.shape, sum1_id.shape, sum2_id.shape)
-           
+            
+            # Output rewards
+            #predicted_reward_1 = model(post_id, sum1_id, device=device)
+            #predicted_reward_2 = model(post_id, sum2_id, device=device)
+            #print("predicted_reward_1: ", predicted_reward_1)
+            #print("predicted_reward_2: ",predicted_reward_2)
+
             try:
                 # Output rewards
                 predicted_reward_1 = model(post_id, sum1_id, device=device)
