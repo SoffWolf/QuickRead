@@ -75,7 +75,7 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             evaluation_strategy='steps',  # evaluation strategy to adopt during training
             eval_steps=100,  # number of update steps before evaluation
             warmup_steps=500,  # number of warmup steps for learning rate scheduler
-            weight_decay=0.01,  # strength of weight decay
+            weight_decay=0,  # strength of weight decay
             learning_rate=6.35e-05,
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=50,
@@ -98,11 +98,11 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
             output_dir=output_dir,  # output directory
             num_train_epochs=1,  # total number of training epochs
             per_device_train_batch_size=8,  # batch size per device during training, can increase if memory allows
-            save_steps=500,  # number of updates steps before checkpoint saves
+            save_steps=5000,  # number of updates steps before checkpoint saves
             save_total_limit=5,  # limit the total amount of checkpoints and deletes the older checkpoints
             lr_scheduler_type="cosine",
             warmup_steps=500,  # number of warmup steps for learning rate scheduler
-            weight_decay=0.01,  # strength of weight decay
+            weight_decay=0,  # strength of weight decay
             logging_dir='./pegasus_large_fine_tune/logs',  # directory for storing logs
             logging_steps=10,
             learning_rate= 6.35e-05,
@@ -133,6 +133,7 @@ if __name__ == '__main__':
     model_name = 'google/pegasus-large'  # 'google/pegasus-large'
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_data(model_name, train_texts, train_labels, val_texts,
                                                                        val_labels, test_texts, test_labels)
+    print("First in train dataset: ", train_dataset[0])
     trainer = prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset)
 
     trainer.train()

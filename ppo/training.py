@@ -8,7 +8,6 @@ import pandas as pd
 tqdm.pandas()
 
 from datasets import load_dataset
-
 from transformers import GPT2Tokenizer
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -18,16 +17,18 @@ from trl.core import build_bert_batch_from_txt
 
 from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
+from ../rewards.py import RewardModel
+
 
 config = {
-        "lm_name": "lvwerra/gpt2-imdb",   # policy: supervised baseline
+    "lm_name": "lvwerra/gpt2-imdb",   # policy: supervised baseline
     "ref_lm_name": "lvwerra/gpt2-imdb",   # find out about the ref model
     "cls_model_name": "lvwerra/distilbert-imdb",   # reward model
     "tk_name": "gpt2",    # tokenizer name
     "steps": 25600,
     "batch_size": 256,
     "forward_batch_size": 16,
-    "ppo_epochs": 4,   
+    "ppo_epochs": 5,   
     "txt_in_len": 5,
     "txt_out_len": 15,
     "lr": 1.41e-5,    # check this in the paper
@@ -43,45 +44,42 @@ config = {
 
 
 
-# load imdb with datasets
-ds = load_dataset('imdb', split='train')
-ds = ds.rename_columns({'text': 'review', 'label': 'sentiment'})
-ds.set_format('pandas')
-df = ds[:]
-# make sure the comments are long enough
-df = df.loc[df['review'].str.len() > 500]
-# make sure comments are not too long
-df['review'] = df['review'].apply(lambda x: x[:1000])
-
+# load supervised baseline
+supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/results")
 
 # Reward model
-sentiment_model = AutoModelForSequenceClassification.from_pretrained(config["cls_model_name"])  # this is reward model
-sentiment_tokenizer = AutoTokenizer.from_pretrained(config["cls_model_name"])  #reward model
-
+reward_model = RewardModel(supervised_baseline)
 
 # Policy model
-gpt2_model = GPT2HeadWithValueModel.from_pretrained(config['lm_name'])
-gpt2_model_ref = GPT2HeadWithValueModel.from_pretrained(config['ref_lm_name'])
-gpt2_tokenizer = GPT2Tokenizer.from_pretrained(config['tk_name'])
-
+policy = PegasusWithValueHead(supervised_baseline)
+policy_ref = PegasusWithValueHead(supervised_baseline)
+tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-_ = gpt2_model.to(device)
-_ = sentiment_model.to(device)
-_ = gpt2_model_ref.to(device)
+_ = supervised_baseline.to(device)
+_ = reward_model.to(device)
+_ = policy.to(device)
+_ = policy_ref.to(device)
+_ = tokenizer.to(device)
 
+# Load the data 
+dataset = load_from_disk("reddit_clean")
+train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
+val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
+test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 # Tokenize the data
-df['tokens'] = df['review'].progress_apply(lambda x: gpt2_tokenizer.encode(x, return_tensors="pt").to(device)[0, :config['txt_in_len']])
+def tokenzize(df):
+    ret = df.progress_apply(lambda x: tokenizer(x, return_tensors="pt").to(device))
+    return ret
 
-df['query'] = df['tokens'].progress_apply(lambda x: gpt2_tokenizer.decode(x))
-
-
-
+token_train, token_train_sum = tokenize(train_texts), tokenize(train_labels)
+token_val, token_val_sum = tokenize(val_texts), tokenize(val_labels)
+token_test, token_test_sum = tokenize(test_texts), tokenize(test_labels)
 
 #################### Training ######################
-ppo_trainer = PPOTrainer(gpt2_model, gpt2_model_ref, **config)
+ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 
 for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
@@ -92,45 +90,37 @@ for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
     t0 = time.time()
     
     #### get a batch from the dataset
-    df_batch = df.sample(config['batch_size'])
-    game_data['query'] = df_batch['query'].tolist()
-    query_tensors = torch.stack(df_batch['tokens'].tolist())
+    query = train_texts.sample(config['batch_size'])
+    query_token = token_train.sample(config['batch_size'])
+    game_data['query'] = query.tolist()
+    query_tensors = torch.stack(query_token.tolist())
     
     #### get response from gpt2
     t = time.time()
-    total_length = config['txt_in_len']+config['txt_out_len']
     response_tensors = []
     for i in range(int(config['batch_size']/fbs)):
-        response  = respond_to_batch(gpt2_model, query_tensors[i*fbs:(i+1)*fbs],
+        response  = respond_to_batch(policy, query_tensors[i*fbs:(i+1)*fbs],
                                      txt_len=config['txt_out_len'])
         response_tensors.append(response)
     response_tensors = torch.cat(response_tensors)
-    game_data['response'] = [gpt2_tokenizer.decode(response_tensors[i, :]) for i in range(config['batch_size'])]
-    timing['time/get_response'] = time.time()-t
+    game_data['response'] = [tokenizer.decode(response_tensors[i, :]) for i in range(config['batch_size'])]
 
     #### tokenize text for sentiment analysis
     t = time.time()
     texts = [q + r for q,r in zip(game_data['query'], game_data['response'])]
-    sentiment_inputs, attention_masks = build_bert_batch_from_txt(texts, sentiment_tokenizer, device)    
-    timing['time/build_input_sentiment'] = time.time()-t
 
     #### get sentiment score
-    t = time.time()
     rewards = []
     for i in range(int(config['batch_size']/fbs)):
-        res = sentiment_model.forward(sentiment_inputs[i*fbs:(i+1)*fbs],
-                                      attention_masks[i*fbs:(i+1)*fbs])[0][:, 1].detach()
+        res = reward_model.forward(game_data['query'][i*fbs:(i+1)*fbs],
+                                    game_data['response'][i*fbs:(i+1)*fbs])
         rewards.append(res)
     rewards = torch.cat(rewards)
-    timing['time/get_sentiment_preds'] = time.time()-t
     
     #### Run PPO training 
-    t = time.time()
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-    timing['time/optimization'] = time.time()-t
      
     #### Log everything
-    timing['time/epoch'] = time.time()-t0
     table_rows = [list(r) for r in zip(game_data['query'], game_data['response'], rewards.cpu().tolist())]
     logs.update({'game_log':wandb.Table(
         columns=['query', 'response', 'reward'],
@@ -143,6 +133,6 @@ for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
     wandb.log(logs)
 
 # Save model
-os.makedirs('gpt2-imdb-pos')
-gpt2_model.save_pretrained('gpt2-imdb-pos')
-gpt2_tokenizer.save_pretrained('gpt2-imdb-pos')
+os.makedirs('result')
+policy.save_pretrained('ppo_fine_tune')
+tokenizer.save_pretrained('ppo_fine_tune_tokenizer')
