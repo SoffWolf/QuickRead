@@ -11,7 +11,7 @@ sys.path.insert(0,'..')
 
 from datasets import load_dataset
 from transformers import GPT2Tokenizer
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import PegasusTokenizer, PegasusForConditionalGeneration
 
 from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
@@ -43,7 +43,7 @@ config = {
 
 
 # load supervised baseline
-supervised_baseline = PegasusForConditionalGeneration.from_pretrained("SophieTr/fine-tune-Pegasus-large")
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("SophieTr/fine-tune-Pegasus-large", cache_dir="HF_HOME")
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)

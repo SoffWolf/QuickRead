@@ -5,7 +5,7 @@ from torch import nn
 from torch.nn import Identity
 import torch.nn.functional as F
 import torch
-
+from rewards.reward_model import RewardModel
 
 
 class ValueHead(nn.Module):
