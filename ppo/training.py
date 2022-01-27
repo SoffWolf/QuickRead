@@ -53,7 +53,7 @@ reward_model = RewardModel(supervised_baseline)
 # Policy model
 policy = PegasusWithValueHead(supervised_baseline)
 policy_ref = PegasusWithValueHead(supervised_baseline)
-tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
+tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,7 +64,7 @@ _ = policy_ref.to(device)
 _ = tokenizer.to(device)
 
 # Load the data 
-dataset = load_from_disk("reddit_clean")
+dataset = load_from_disk("../QuickReadOld/reddit_clean")
 train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
