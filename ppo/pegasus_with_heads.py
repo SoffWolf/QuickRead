@@ -56,7 +56,7 @@ class PegasusWithValueHead(nn.Module):
         lm_logits = self.lm_head(hidden_states)
         value = self.v_head(hidden_states).squeeze(-1)
 
-        outputs = (lm_logits,) + x[1:] + (value,)
+        outputs = (lm_logits,) + x + (value,)
 
         return outputs
 

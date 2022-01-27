@@ -45,7 +45,7 @@ config = {
 
 
 # load supervised baseline
-supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/results")
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("SophieTr/fine-tune-Pegasus-large")
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)
@@ -82,55 +82,29 @@ token_test, token_test_sum = tokenize(test_texts), tokenize(test_labels)
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 
-for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
-    torch.cuda.empty_cache()
+for epoch in range(epochs):
     logs = dict()
-    game_data = dict()
     timing = dict()
     t0 = time.time()
-    
-    #### get a batch from the dataset
-    query = train_texts.sample(config['batch_size'])
-    query_token = token_train.sample(config['batch_size'])
-    game_data['query'] = query.tolist()
-    query_tensors = torch.stack(query_token.tolist())
-    
-    #### get response from gpt2
-    t = time.time()
+
+    query_tensors = []  # get query tensor for PPO training
     response_tensors = []
-    for i in range(int(config['batch_size']/fbs)):
-        response  = respond_to_batch(policy, query_tensors[i*fbs:(i+1)*fbs],
-                                     txt_len=config['txt_out_len'])
-        response_tensors.append(response)
-    response_tensors = torch.cat(response_tensors)
-    game_data['response'] = [tokenizer.decode(response_tensors[i, :]) for i in range(config['batch_size'])]
-
-    #### tokenize text for sentiment analysis
-    t = time.time()
-    texts = [q + r for q,r in zip(game_data['query'], game_data['response'])]
-
-    #### get sentiment score
     rewards = []
-    for i in range(int(config['batch_size']/fbs)):
-        res = reward_model.forward(game_data['query'][i*fbs:(i+1)*fbs],
-                                    game_data['response'][i*fbs:(i+1)*fbs])
-        rewards.append(res)
+    for query, label in tqdm(token_train[:1000]):
+        logits, response, values = policy(query)
+        reward = reward_model(query, response)
+        query_tensors.append(query)
+        response_tensors.append(response)
+        rewards.append(reward)
+
+    query_tensors = torch.cat(query_tensors)
+    response_tensors = torch.cat(response_tensors)
     rewards = torch.cat(rewards)
     
     #### Run PPO training 
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
     #### Log everything
-    table_rows = [list(r) for r in zip(game_data['query'], game_data['response'], rewards.cpu().tolist())]
-    logs.update({'game_log':wandb.Table(
-        columns=['query', 'response', 'reward'],
-        rows=table_rows)})
-    logs.update(timing)
-    logs.update(stats)
-    logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-    logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-    logs['env/reward_dist'] = rewards.cpu().numpy()
-    wandb.log(logs)
 
 # Save model
 os.makedirs('result')
