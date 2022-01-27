@@ -31,7 +31,7 @@ class ValueHead(nn.Module):
 class PegasusWithValueHead(nn.Module):
     """This model class is Pegasus language model with a secondary scalar head"""
     def __init__(self, supervised_baseline, d_model=1024, vocab_size = 50265, init_scales=1.0):
-        super(RewardModel, self).__init__()
+        super().__init__()
         self.d_model = d_model
         self.model = supervised_baseline
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
