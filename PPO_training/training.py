@@ -95,6 +95,8 @@ test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 epochs = 2
+train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
+
 for epoch in range(epochs):
     logs = dict()
     timing = dict()
