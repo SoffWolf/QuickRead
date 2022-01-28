@@ -101,20 +101,25 @@ for epoch in range(epochs):
         #print(query)
     #for query, label in tqdm(token_train[:1000]):
         query = torch.LongTensor(query).unsqueeze(0)
-        print("query: ", query.shape)
+        # print("query: ", query.shape)
         #logits, response, values = policy(query)
         response = policy.generate(input_ids=query)
-        print("response: ", response.shape)
+        # print("response: ", response.shape)
         response = torch.LongTensor(response)
         reward = reward_model(query, response)
         query_tensors.append(query)
         response_tensors.append(response)
         rewards.append(reward)
 
-    query_tensors = torch.cat(query_tensors)
-    response_tensors = torch.cat(response_tensors)
+    print("query_tensors: ", query_tensors.shape, query_tensors[0].shape,query_tensors[1].shape )
+    print("response_tensors: ", response_tensors.shape, response_tensors[0].shape,response_tensors[1].shape )
+    print("rewards: ", rewards)
+    query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors, batch_first=True)
+    response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors, batch_first=True)
     rewards = torch.cat(rewards)
-    
+    print("padded query tensor: ", query_tensors, query_tensors.shape)
+    print("padded response_tensors: ", response_tensors, response_tensors.shape)   
+        
     #### Run PPO training 
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
