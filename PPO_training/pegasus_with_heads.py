@@ -1,10 +1,11 @@
 # value head init from reward model weight
+import numpy as np
+import torch.nn.functional as F
+import torch
 
 from transformers import top_k_top_p_filtering
 from torch import nn
 from torch.nn import Identity
-import torch.nn.functional as F
-import torch
 from rewards.reward_model import RewardModel
 
 
@@ -37,8 +38,6 @@ class PegasusWithValueHead(nn.Module):
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.v_head = ValueHead()
 
-        self.init_weights()
-
     def get_output_embeddings(self):
         return self.lm_head
 
@@ -47,16 +46,20 @@ class PegasusWithValueHead(nn.Module):
 
 
     def forward(self, post_tokens, device=None):
-        # len_post = post_tokens.shape[1] 
+        # len_post = post_tokens.shape[1]
+        #print(post_tokens, type(post_tokens), post_tokens.size())  
         input_ids = post_tokens
         decoder_input_ids = input_ids
-        x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        x = self.model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
         # go through custom layer
-        hidden_states = x.last_hidden_state
+        hidden_states = x.encoder_last_hidden_state
         lm_logits = self.lm_head(hidden_states)
         value = self.v_head(hidden_states).squeeze(-1)
-
-        outputs = (lm_logits,) + x + (value,)
+        #print(type(lm_logits), lm_logits.shape)
+        #print(type(x), x.shape)
+        #print(type(value), value.shape)
+        #print(type(x[1:]), x[1:])
+        outputs = (lm_logits,) + x[1:] + (value,)
 
         return outputs
 

@@ -9,7 +9,7 @@ tqdm.pandas()
 import sys
 sys.path.insert(0,'..')
 
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from transformers import GPT2Tokenizer
 from transformers import PegasusTokenizer, PegasusForConditionalGeneration
 
@@ -43,14 +43,17 @@ config = {
 
 
 # load supervised baseline
-supervised_baseline = PegasusForConditionalGeneration.from_pretrained("SophieTr/fine-tune-Pegasus-large", cache_dir="HF_HOME")
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)
 
 # Policy model
-policy = PegasusWithValueHead(supervised_baseline)
-policy_ref = PegasusWithValueHead(supervised_baseline)
+#policy = PegasusWithValueHead(supervised_baseline)
+#policy_ref = PegasusWithValueHead(supervised_baseline)
+policy = supervised_baseline
+policy_ref = supervised_baseline
+
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
 # Put all the model to cuda, if possible
@@ -59,27 +62,30 @@ _ = supervised_baseline.to(device)
 _ = reward_model.to(device)
 _ = policy.to(device)
 _ = policy_ref.to(device)
-_ = tokenizer.to(device)
 
 # Load the data 
-dataset = load_from_disk("../QuickReadOld/reddit_clean")
+dataset = load_from_disk("../../../QuickRead/reddit_clean")
 train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 # Tokenize the data
-def tokenzize(df):
-    ret = df.progress_apply(lambda x: tokenizer(x, return_tensors="pt").to(device))
-    return ret
+#def tokenize(inp):
+#    df = pd.DataFrame(inp)
+#    print(type(df[0].to_string()))
+#    print(df[0].to_string())
+#    ret = df.progress_apply(lambda x: tokenizer(x.to_string(), return_tensors="pt").to(device))
+#    print("ret: ", ret)
+#    return ret
 
-token_train, token_train_sum = tokenize(train_texts), tokenize(train_labels)
-token_val, token_val_sum = tokenize(val_texts), tokenize(val_labels)
-token_test, token_test_sum = tokenize(test_texts), tokenize(test_labels)
+#token_train, token_train_sum = tokenize(train_texts), tokenize(train_labels)
+#token_val, token_val_sum = tokenize(val_texts), tokenize(val_labels)
+#token_test, token_test_sum = tokenize(test_texts), tokenize(test_labels)
 
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
-
+epochs = 2
 for epoch in range(epochs):
     logs = dict()
     timing = dict()
@@ -88,8 +94,18 @@ for epoch in range(epochs):
     query_tensors = []  # get query tensor for PPO training
     response_tensors = []
     rewards = []
-    for query, label in tqdm(token_train[:1000]):
-        logits, response, values = policy(query)
+    
+    for i in range (2):
+        #print(type(train_texts), type(train_texts[0]))
+        query = tokenizer(train_texts[i]).input_ids
+        #print(query)
+    #for query, label in tqdm(token_train[:1000]):
+        query = torch.LongTensor(query).unsqueeze(0)
+        print("query: ", query.shape)
+        #logits, response, values = policy(query)
+        response = policy.generate(input_ids=query)
+        print("response: ", response.shape)
+        response = torch.LongTensor(response)
         reward = reward_model(query, response)
         query_tensors.append(query)
         response_tensors.append(response)
