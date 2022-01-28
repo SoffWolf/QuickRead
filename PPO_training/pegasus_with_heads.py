@@ -62,6 +62,11 @@ class PegasusWithValueHead(nn.Module):
         outputs = (lm_logits,) + x[1:] + (value,)
 
         return outputs
+    def generate(self, post_tokens):
+        input_ids = post_tokens
+        output_token = self.model.generate(input_ids=input_ids)
+        return output_token
+
 
         # if device is not None: 
         #   values = self.head(x.to(device))

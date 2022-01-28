@@ -49,10 +49,8 @@ supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pe
 reward_model = RewardModel(supervised_baseline)
 
 # Policy model
-#policy = PegasusWithValueHead(supervised_baseline)
-#policy_ref = PegasusWithValueHead(supervised_baseline)
-policy = supervised_baseline
-policy_ref = supervised_baseline
+policy = PegasusWithValueHead(supervised_baseline)
+policy_ref = PegasusWithValueHead(supervised_baseline)
 
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
