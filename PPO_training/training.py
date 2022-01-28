@@ -44,7 +44,7 @@ config = {
 group = "quickread"
 project = "PPO-training"
 display_name = "experiment-2022-27-1"
-wandb.init(entity=group, project=project, name=display_name, , config=config)
+wandb.init(entity=group, project=project, name=display_name, config=config)
 
 
 
