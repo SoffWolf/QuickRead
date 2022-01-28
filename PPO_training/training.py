@@ -95,7 +95,7 @@ test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 epochs = 2
-train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
+#train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 
 for epoch in range(epochs):
     logs = dict()
@@ -112,11 +112,13 @@ for epoch in range(epochs):
         #print(query)
     #for query, label in tqdm(token_train[:1000]):
         query = torch.LongTensor(query).unsqueeze(0)
+        query = query.to(device)
         # print("query: ", query.shape)
         #logits, response, values = policy(query)
         response = policy.generate(input_ids=query)
-        # print("response: ", response.shape)
-        response = torch.LongTensor(response)
+        print("response: ", type(response), response.shape)
+        #response = torch.FloatTensor(response)
+        #response = response.to(device)
         reward = reward_model(query, response)
         query_tensors.append(query.squeeze(0))
         response_tensors.append(response.squeeze(0))
@@ -128,12 +130,12 @@ for epoch in range(epochs):
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
     print("padded query tensor: ", query_tensors.shape)
-    print("padded response_tensors: ", response_tensors)   
-    query_tensors = query_tensors.unsqueeze(dim=0)
-    response_tensors = response_tensors.unsqueeze(dim=0)
-    rewards = torch.cat(rewards)
+    print("padded response_tensors: ", response_tensors.shape)   
+    query_tensors = query_tensors.unsqueeze(dim=0).to(device)
+    response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+    rewards = torch.cat(rewards).to(device)
     print("padded query tensor: ", query_tensors.shape)
-    print("padded response_tensors: ", response_tensors)   
+    print("padded response_tensors: ", response_tensors.shape)   
         
     #### Run PPO training 
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
