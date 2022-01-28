@@ -40,6 +40,12 @@ config = {
     "vf_coef":.1, 
 }
 
+## WANDB 
+group = "quickread"
+project = "PPO-training"
+display_name = "experiment-2022-27-1"
+wandb.init(entity=group, project=project, name=display_name, , config=config)
+
 
 
 # load supervised baseline
@@ -55,6 +61,9 @@ policy = supervised_baseline
 policy_ref = supervised_baseline
 
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+
+# Wandb
+wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -124,7 +133,13 @@ for epoch in range(epochs):
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
     #### Log everything
-
+    timing['time/epoch'] = time.time()-t0
+    logs.update(timing)
+    logs.update(stats)
+    logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+    logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+    logs['env/reward_dist'] = rewards.cpu().numpy()
+    wandb.log(logs)
 # Save model
 os.makedirs('result')
 policy.save_pretrained('ppo_fine_tune')
