@@ -125,8 +125,12 @@ for epoch in range(epochs):
     print("rewards: ", rewards)
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
+    print("padded query tensor: ", query_tensors.shape)
+    print("padded response_tensors: ", response_tensors)   
+    query_tensors = query_tensors.unsqueeze(dim=0)
+    response_tensors = response_tensors.unsqueeze(dim=0)
     rewards = torch.cat(rewards)
-    print("padded query tensor: ", query_tensors)
+    print("padded query tensor: ", query_tensors.shape)
     print("padded response_tensors: ", response_tensors)   
         
     #### Run PPO training 
