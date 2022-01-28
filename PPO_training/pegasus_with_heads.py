@@ -47,20 +47,17 @@ class PegasusWithValueHead(nn.Module):
 
     def forward(self, post_tokens, device=None):
         # len_post = post_tokens.shape[1]
-        #print(post_tokens, type(post_tokens), post_tokens.size())  
+        #print("Pegasus with head forward: ", post_tokens.shape, type(post_tokens))  
         input_ids = post_tokens
         decoder_input_ids = input_ids
         x = self.model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        #print("x: ", x)
+        #print("x.encoder_last_hidden_state: ", x.encoder_last_hidden_state)
         # go through custom layer
         hidden_states = x.encoder_last_hidden_state
         lm_logits = self.lm_head(hidden_states)
         value = self.v_head(hidden_states).squeeze(-1)
-        #print(type(lm_logits), lm_logits.shape)
-        #print(type(x), x.shape)
-        #print(type(value), value.shape)
-        #print(type(x[1:]), x[1:])
-        outputs = (lm_logits,) + x[1:] + (value,)
-
+        outputs = (lm_logits,) + (torch.zeros((1,1)),) + (value,)
         return outputs
     def generate(self, post_tokens):
         input_ids = post_tokens

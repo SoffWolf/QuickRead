@@ -129,9 +129,11 @@ class PPOTrainer:
         t0 = time.time()
 
         gen_len = response.shape[1]
-        model_input = torch.cat((query, response), axis=1)
+        model_input = torch.cat((query, response), axis=-1)
 
         t = time.time()
+        print("gen len: ", gen_len)
+        print("model_inp`ut: ", model_input.shape)
         logprobs, ref_logprobs, values = self.batched_forward_pass(model_input, gen_len)
         timing['time/ppo/forward_pass'] = time.time()-t
 

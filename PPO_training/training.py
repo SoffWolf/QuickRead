@@ -55,10 +55,10 @@ supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pe
 reward_model = RewardModel(supervised_baseline)
 
 # Policy model
-#policy = PegasusWithValueHead(supervised_baseline)
-#policy_ref = PegasusWithValueHead(supervised_baseline)
-policy = supervised_baseline
-policy_ref = supervised_baseline
+policy = PegasusWithValueHead(supervised_baseline)
+policy_ref = PegasusWithValueHead(supervised_baseline)
+#policy = supervised_baseline
+#policy_ref = supervised_baseline
 
 tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
 
@@ -106,7 +106,7 @@ for epoch in range(epochs):
     response_tensors = []
     rewards = []
     
-    for i in range (2):
+    for i in range (4):
         #print(type(train_texts), type(train_texts[0]))
         query = tokenizer(train_texts[i]).input_ids
         #print(query)
@@ -115,8 +115,7 @@ for epoch in range(epochs):
         query = query.to(device)
         # print("query: ", query.shape)
         #logits, response, values = policy(query)
-        response = policy.generate(input_ids=query)
-        print("response: ", type(response), response.shape)
+        response = policy.generate(query)
         #response = torch.FloatTensor(response)
         #response = response.to(device)
         reward = reward_model(query, response)
@@ -126,17 +125,15 @@ for epoch in range(epochs):
 
     #print("query_tensors: ", query_tensors.shape, query_tensors[0].shape,query_tensors[1].shape )
     #print("response_tensors: ", response_tensors.shape, response_tensors[0].shape,response_tensors[1].shape )
-    print("rewards: ", rewards)
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-    print("padded query tensor: ", query_tensors.shape)
-    print("padded response_tensors: ", response_tensors.shape)   
     query_tensors = query_tensors.unsqueeze(dim=0).to(device)
     response_tensors = response_tensors.unsqueeze(dim=0).to(device)
     rewards = torch.cat(rewards).to(device)
-    print("padded query tensor: ", query_tensors.shape)
-    print("padded response_tensors: ", response_tensors.shape)   
-        
+    
+    query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
+    response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
+    
     #### Run PPO training 
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
