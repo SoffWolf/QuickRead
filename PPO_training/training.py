@@ -79,8 +79,7 @@ val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 
-train_texts.set_format('pandas')
-df = train_texts[:]
+df = pd.DataFrame(train_texts)
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
