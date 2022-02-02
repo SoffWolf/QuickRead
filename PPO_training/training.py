@@ -60,7 +60,7 @@ policy_ref = PegasusWithValueHead(supervised_baseline)
 #policy = supervised_baseline
 #policy_ref = supervised_baseline
 
-tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", pad_to_max_length=True, cache_dir="HF_HOME")
 
 # Wandb
 wandb.watch(policy, log='all')
@@ -78,10 +78,10 @@ train_texts, train_labels = dataset['train']['content'], dataset['train']['summa
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
-
-df = train_texts.map(lambda x: tokenizer.encode(x, return_tensors="pt").input_ids.to(device))
-print(type(df))
+print(train_texts[0])
+df = map(lambda x: tokenizer(x).input_ids, train_texts[:96])
 df = pd.DataFrame(df)
+print("DF LEN: ",len(df))
  
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
@@ -101,6 +101,8 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     
     for i in range(int(config["batch_size"] / fbs)):
         query = query_batch[i*fbs:(i+1)*fbs]
+        query = query.values.tolist()
+        print(type(query), query, type(query[0]))
         query = torch.LongTensor(query).unsqueeze(0)
         query = query.to(device)
         # print("query: ", query.shape)
