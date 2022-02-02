@@ -19,13 +19,13 @@ from rewards.reward_model import RewardModel
 
 
 config = {
-    "lm_name": "lvwerra/gpt2-imdb",   # policy: supervised baseline
+    "lm_name": "google/pegasus-large",   # policy: supervised baseline
     "ref_lm_name": "lvwerra/gpt2-imdb",   # find out about the ref model
     "cls_model_name": "lvwerra/distilbert-imdb",   # reward model
     "tk_name": "gpt2",    # tokenizer name
     "steps": 25600,
-    "batch_size": 256,
-    "forward_batch_size": 16,
+    "batch_size": 4,
+    "forward_batch_size": 4,
     "ppo_epochs": 5,   
     "txt_in_len": 5,
     "txt_out_len": 15,
@@ -118,7 +118,7 @@ for epoch in range(epochs):
         response = policy.generate(query)
         #response = torch.FloatTensor(response)
         #response = response.to(device)
-        reward = reward_model(query, response)
+        reward = reward_model(query, response).detach()
         query_tensors.append(query.squeeze(0))
         response_tensors.append(response.squeeze(0))
         rewards.append(reward)
@@ -133,9 +133,12 @@ for epoch in range(epochs):
     
     query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
     response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-    
+    #print("query_tensors: ", query_tensors.shape)
+    #print("response_tensors: ", response_tensors.shape)
+    #print("rewards: ", rewards.shape)
+
     #### Run PPO training 
-    stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+    	stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
     #### Log everything
     timing['time/epoch'] = time.time()-t0
@@ -146,6 +149,10 @@ for epoch in range(epochs):
     logs['env/reward_dist'] = rewards.cpu().numpy()
     wandb.log(logs)
 # Save model
-os.makedirs('result')
-policy.save_pretrained('ppo_fine_tune')
-tokenizer.save_pretrained('ppo_fine_tune_tokenizer')
+# Print model's state_dict
+print("Model's state_dict:")
+for param_tensor in policy.state_dict():
+    print(param_tensor, "\t", policy.state_dict()[param_tensor].size())
+# Save model
+checkpoint = {'state_dict': policy.state_dict()}
+torch.save(checkpoint, os.path.join("./result/test.pth"))

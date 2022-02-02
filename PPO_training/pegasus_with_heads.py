@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn.functional as F
 import torch
 
-from transformers import top_k_top_p_filtering
+from transformers import top_k_top_p_filtering, PegasusPreTrainedModel
 from torch import nn
 from torch.nn import Identity
 from rewards.reward_model import RewardModel
@@ -31,8 +31,8 @@ class ValueHead(nn.Module):
 
 class PegasusWithValueHead(nn.Module):
     """This model class is Pegasus language model with a secondary scalar head"""
-    def __init__(self, supervised_baseline, d_model=1024, vocab_size = 50265, init_scales=1.0):
-        super().__init__()
+    def __init__(self, supervised_baseline, d_model=1024, vocab_size = 96103, init_scales=1.0):
+        super(PegasusWithValueHead,self).__init__()
         self.d_model = d_model
         self.model = supervised_baseline
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
@@ -57,6 +57,8 @@ class PegasusWithValueHead(nn.Module):
         hidden_states = x.encoder_last_hidden_state
         lm_logits = self.lm_head(hidden_states)
         value = self.v_head(hidden_states).squeeze(-1)
+        print("lm_logits.shape : ", lm_logits.shape) 
+        print("Value after squeeze: ", value.shape)
         outputs = (lm_logits,) + (torch.zeros((1,1)),) + (value,)
         return outputs
     def generate(self, post_tokens):
