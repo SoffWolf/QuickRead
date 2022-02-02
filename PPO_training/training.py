@@ -79,7 +79,10 @@ val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 
-df = pd.DataFrame(train_texts)
+df_train = pd.DataFrame(train_texts)
+df = df_train.progress_apply(lambda x: tokenizer.encode(x, return_tensors="pt").input_ids.to(device))
+print(df.shape)
+ 
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
@@ -97,7 +100,7 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     rewards = []
     
     for i in range(int(config["batch_size"] / fbs)):
-        query = tokenizer(query_batch[i*fbs:(i+1)*fbs]).input_ids
+        query = query_batch[i*fbs:(i+1)*fbs]
         query = torch.LongTensor(query).unsqueeze(0)
         query = query.to(device)
         # print("query: ", query.shape)
