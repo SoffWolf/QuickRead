@@ -79,9 +79,9 @@ val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 
-df_train = pd.DataFrame(train_texts)
-df = df_train.progress_apply(lambda x: tokenizer.encode(x, return_tensors="pt").input_ids.to(device))
-print(df.shape)
+df = train_texts.map(lambda x: tokenizer.encode(x, return_tensors="pt").input_ids.to(device))
+print(type(df))
+df = pd.DataFrame(df)
  
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
