@@ -24,9 +24,9 @@ config = {
     "cls_model_name": "lvwerra/distilbert-imdb",   # reward model
     "tk_name": "gpt2",    # tokenizer name
     "steps": 25600,
-    "batch_size": 4,
+    "batch_size": 16,
     "forward_batch_size": 4,
-    "ppo_epochs": 5,   
+    "ppo_epochs": 1,   
     "txt_in_len": 5,
     "txt_out_len": 15,
     "lr": 1.41e-5,    # check this in the paper
@@ -78,39 +78,27 @@ train_texts, train_labels = dataset['train']['content'], dataset['train']['summa
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
-# Tokenize the data
-#def tokenize(inp):
-#    df = pd.DataFrame(inp)
-#    print(type(df[0].to_string()))
-#    print(df[0].to_string())
-#    ret = df.progress_apply(lambda x: tokenizer(x.to_string(), return_tensors="pt").to(device))
-#    print("ret: ", ret)
-#    return ret
 
-#token_train, token_train_sum = tokenize(train_texts), tokenize(train_labels)
-#token_val, token_val_sum = tokenize(val_texts), tokenize(val_labels)
-#token_test, token_test_sum = tokenize(test_texts), tokenize(test_labels)
-
+train_texts.set_format('pandas')
+df = train_texts[:]
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
-epochs = 2
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 
-for epoch in range(epochs):
+for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     logs = dict()
     timing = dict()
     t0 = time.time()
+
+    query_batch = df.sample(config["batch_size"])
 
     query_tensors = []  # get query tensor for PPO training
     response_tensors = []
     rewards = []
     
-    for i in range (4):
-        #print(type(train_texts), type(train_texts[0]))
-        query = tokenizer(train_texts[i]).input_ids
-        #print(query)
-    #for query, label in tqdm(token_train[:1000]):
+    for i in range(int(config["batch_size"] / fbs)):
+        query = tokenizer(query_batch[i*fbs:(i+1)*fbs]).input_ids
         query = torch.LongTensor(query).unsqueeze(0)
         query = query.to(device)
         # print("query: ", query.shape)
@@ -138,7 +126,7 @@ for epoch in range(epochs):
     #print("rewards: ", rewards.shape)
 
     #### Run PPO training 
-    	stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+    stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      
     #### Log everything
     timing['time/epoch'] = time.time()-t0
