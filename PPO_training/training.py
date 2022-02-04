@@ -24,8 +24,8 @@ config = {
     "cls_model_name": "lvwerra/distilbert-imdb",   # reward model
     "tk_name": "gpt2",    # tokenizer name
     "steps": 25600,
-    "batch_size": 16,
-    "forward_batch_size": 4,
+    "batch_size": 8,
+    "forward_batch_size":4,
     "ppo_epochs": 1,   
     "txt_in_len": 5,
     "txt_out_len": 15,
@@ -53,6 +53,7 @@ supervised_baseline = PegasusForConditionalGeneration.from_pretrained("google/pe
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)
+reward_model.load_state_dict(torch.load(os.path.join("../../../QuickRead/reward_model_weight_PegasusWithLMHead_Jan27/epoch-5.pth")), strict=False)
 
 # Policy model
 policy = PegasusWithValueHead(supervised_baseline)
@@ -60,8 +61,14 @@ policy_ref = PegasusWithValueHead(supervised_baseline)
 #policy = supervised_baseline
 #policy_ref = supervised_baseline
 
-tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", pad_to_max_length=True, cache_dir="HF_HOME")
+keys_file = open("hfAPI.txt")
+key = keys_file.readlines()[0].rstrip()
+print(key)
 
+tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large", cache_dir="HF_HOME")
+
+save_directory = "QuickRead/PPO_training"
+policy.save(save_directory, True, 'https://huggingface.co/QuickRead/PPO_training', key, "QuickRead")
 # Wandb
 wandb.watch(policy, log='all')
 
@@ -78,10 +85,11 @@ train_texts, train_labels = dataset['train']['content'], dataset['train']['summa
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
-print(train_texts[0])
-df = map(lambda x: tokenizer(x).input_ids, train_texts[:96])
-df = pd.DataFrame(df)
-print("DF LEN: ",len(df))
+#df = tokenizer(train_texts[:96], padding=True, truncation=True, return_tensors='pt').input_ids
+#print(df)
+#df = map(lambda x: tokenizer(x).input_ids, train_texts[:32])
+df = pd.DataFrame(train_texts)
+#print("DF: ",(df))
  
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
@@ -89,6 +97,7 @@ fbs = config['forward_batch_size']
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 
 for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
+    torch.cuda.empty_cache()
     logs = dict()
     timing = dict()
     t0 = time.time()
@@ -101,22 +110,29 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     
     for i in range(int(config["batch_size"] / fbs)):
         query = query_batch[i*fbs:(i+1)*fbs]
-        query = query.values.tolist()
-        print(type(query), query, type(query[0]))
-        query = torch.LongTensor(query).unsqueeze(0)
+        query = map(lambda x: x[0], query.values.tolist())
+        #print(type(query), query.items())
+        query = list(query)
+        query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
+        #print("QUERY after tokenizer: ", query, type(query))
         query = query.to(device)
-        # print("query: ", query.shape)
+        #print("query: ", query.shape)
         #logits, response, values = policy(query)
         response = policy.generate(query)
         #response = torch.FloatTensor(response)
         #response = response.to(device)
         reward = reward_model(query, response).detach()
-        query_tensors.append(query.squeeze(0))
-        response_tensors.append(response.squeeze(0))
+        #for k in range(fbs):
+        #    query_tensors = query_tensors.append(query[k])
+        #    response_tensors = response_tensors.append(response[k])
+        query_tensors = query_tensors + list(torch.split(query,1))
+        response_tensors = response_tensors + list(torch.split(response,1))
         rewards.append(reward)
-
-    #print("query_tensors: ", query_tensors.shape, query_tensors[0].shape,query_tensors[1].shape )
-    #print("response_tensors: ", response_tensors.shape, response_tensors[0].shape,response_tensors[1].shape )
+    for k in range(len(query_tensors)):
+        query_tensors[k] = query_tensors[k].squeeze(0)
+        response_tensors[k] = response_tensors[k].squeeze(0)
+    #print("query_tensors: ", len(query_tensors), query_tensors[0].shape,query_tensors[1].shape )
+    #print("response_tensors: ", len(response_tensors), response_tensors[0].shape,response_tensors[1].shape )
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
     query_tensors = query_tensors.unsqueeze(dim=0).to(device)
@@ -140,11 +156,13 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
     logs['env/reward_dist'] = rewards.cpu().numpy()
     wandb.log(logs)
-# Save model
-# Print model's state_dict
-print("Model's state_dict:")
-for param_tensor in policy.state_dict():
-    print(param_tensor, "\t", policy.state_dict()[param_tensor].size())
+
 # Save model
 checkpoint = {'state_dict': policy.state_dict()}
-torch.save(checkpoint, os.path.join("./result/test.pth"))
+#torch.save(checkpoint, os.path.join("./result/test.pth"))
+torch.save(checkpoint, os.path.join("./ppo_checkpoints_testHF", 'epoch-{}.pth'.format(epoch+1)))
+    
+# HF push_to_hub:
+policy.push_to_hub("QuickRead/PPO_training")
+tokenizer.push_to_hub("QuickRead/PPO_training")
+

@@ -63,8 +63,13 @@ class PegasusWithValueHead(nn.Module):
         return outputs
     def generate(self, post_tokens):
         input_ids = post_tokens
-        output_token = self.model.generate(input_ids=input_ids)
+        output_token = self.model.generate(input_ids = input_ids)
         return output_token
+
+    def save(self, save_dir, push, repo, key, org):
+        self.model.save_pretrained(save_directory=save_dir, push_to_hub=push, repo_url=repo, use_auth_token=key, organization=org)
+    def push_to_hub(self, repo):
+        self.model.push_to_hub(repo)
 
 
         # if device is not None: 
