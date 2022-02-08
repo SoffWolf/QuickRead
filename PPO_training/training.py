@@ -121,7 +121,10 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
         response = policy.generate(query)
         #response = torch.FloatTensor(response)
         #response = response.to(device)
-        reward = reward_model(query, response).detach()
+        try:
+            reward = reward_model(query, response).detach()
+        except:
+            pass
         #for k in range(fbs):
         #    query_tensors = query_tensors.append(query[k])
         #    response_tensors = response_tensors.append(response[k])
