@@ -1,4 +1,0 @@
-  File "/scratch/work/truongl3/QuickRead/ppo/training.py", line 20
-    from ../rewards/reward_model.py import RewardModel
-           ^
-SyntaxError: invalid syntax

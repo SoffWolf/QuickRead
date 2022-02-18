@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.functional as F
-from rewards.reward_model import RewardModel
+from reward_model import RewardModel
 from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
 import time
@@ -14,7 +14,7 @@ import wandb
 import os
 
 # First import the json data into pandas dataframes
-numbers = [3] #[i+3 for i in range (18)] + [22]
+numbers = [i+3 for i in range (18)] + [22]
 data = []
 columns = [
     "post",
@@ -61,8 +61,6 @@ for num in numbers:
 
 
 df = pd.DataFrame(data, columns=columns)
-# tokenizer = AutoTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
-# supervised_baseline = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/fine-tune-Pegasus")
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
@@ -101,20 +99,27 @@ class Dataset(torch.utils.data.Dataset):
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
-supervised_baseline = PegasusModel.from_pretrained("google/pegasus-large") # Tobechange
-
+tokenizer = PegasusTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
+supervised_baseline = PegasusModel.from_pretrained("SophieTr/fine-tune-Pegasus") # Tobechange
 
 model = RewardModel(supervised_baseline)
+
+keys_file = open("../PPO_training/hfAPI.txt")
+key = keys_file.readlines()[0].rstrip()
+#print(key)
+
+#save_directory = "QuickRead/Reward_training_Pegasus_xsum"
+#model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_xsum', key, "QuickRead")
 
 # WANDB 
 # import wandb
 
 # WANDB 
 user = "sophietr"
+group = "quickread"
 project = "text-summary-reward-model"
-display_name = "experiment-2022-1-1"
-wandb.init(entity=user, project=project, name=display_name)
+display_name = "experiment-2022-xsum"
+wandb.init(entity=group, project=project, name=display_name)
 
 
 # training loop
@@ -124,16 +129,16 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     def criterion(x):
         # For tracking purposes: --> DELETE later
-        print("\n x =", x)
+        #print("\n x =", x)
         s = nn.Sigmoid()
         sigmoid_r = s(x)
-        print("\n Sigmoid = ", sigmoid_r)
+        #print("\n Sigmoid = ", sigmoid_r)
 
         # Criterion
         ret = torch.log(sigmoid_r)
         m = nn.LogSigmoid()
         ret = m(x) * -1
-        print("\n ret from criterion = ", ret)
+        #print("\n ret from criterion = ", ret)
         return ret
 
     train, val = Dataset(train_data), Dataset(val_data)
@@ -157,18 +162,19 @@ def train(model, train_data, val_data, learning_rate, epochs):
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
 
             # Input
-            post_id = post['input_ids'].squeeze(1).squeeze(1)
-            sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
-            sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
-            # print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
-            label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
-            
+            post_id = post['input_ids'].squeeze(1).to(device)
+            sum1_id = sum1['input_ids'].squeeze(1).to(device)
+            sum2_id = sum2['input_ids'].squeeze(1).to(device)
+            #print("TYPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
+            #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+            #post_id, sum1_id, sum2_id = post_id.to(device), sum1_id.to(device), sum2_id.to(device)
+            #print("SHAPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
             try:
                 # Output rewards
                 predicted_reward_1 = model(post_id, sum1_id, device=device)
                 predicted_reward_2 = model(post_id, sum2_id, device=device)
-                print("predicted_reward_1: ", predicted_reward_1)
-                print("predicted_reward_2: ",predicted_reward_2)
+                #print("predicted_reward_1: ", predicted_reward_1)
+                #print("predicted_reward_2: ",predicted_reward_2)
             except: 
                 print("ERROR IN TRAIN LOOP (1)")
                 print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
@@ -221,8 +227,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
                     # Output rewards
                     predicted_reward_1 = model(post_id, sum1_id, device=device)
                     predicted_reward_2 = model(post_id, sum2_id, device=device)
-                    print("predicted_reward_1: ", predicted_reward_1)
-                    print("predicted_reward_2: ",predicted_reward_2)
+                    #print("predicted_reward_1: ", predicted_reward_1)
+                    #print("predicted_reward_2: ",predicted_reward_2)
                 except: 
                     print("ERROR IN TRAIN LOOP (2)")
                     print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
@@ -238,7 +244,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
                 total_loss_val+= batch_loss.item()
                 step += 1
-                print("eval batch loss: ", batch_loss)
+                #print("eval batch loss: ", batch_loss)
 
                 acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
                 total_acc_val += acc
@@ -277,21 +283,24 @@ def train(model, train_data, val_data, learning_rate, epochs):
                    "val/Val-acc": total_acc_val / len(val_data) })
 
         # Print model's state_dict
-        print("Model's state_dict:")
-        for param_tensor in model.state_dict():
-            print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+        #print("Model's state_dict:")
+        #for param_tensor in model.state_dict():
+            #print(param_tensor, "\t", model.state_dict()[param_tensor].size())
 
         # Print optimizer's state_dict
-        print("Optimizer's state_dict:")
-        for var_name in optimizer.state_dict():
-            print(var_name, "\t", optimizer.state_dict()[var_name])
+        #print("Optimizer's state_dict:")
+        #for var_name in optimizer.state_dict():
+            #print(var_name, "\t", optimizer.state_dict()[var_name])
         
-        # Save model
-        checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
-        # torch.save(model.state_dict(), PATH)
-        torch.save(checkpoint, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num+1)))
+    # Save model
+    checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
+    # torch.save(model.state_dict(), PATH)
+    torch.save(checkpoint, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
 
-        # torch.save(model, os.path.join("./reward_model_weight", 'epoch-{}.pth'.format(epoch_num+1)))
+    # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
+    model.push_to_hub("QuickRead/PPO_training")
+    tokenizer.push_to_hub("QuickRead/PPO_training")
+    
 
 EPOCHS = 5
 LR = 1e-6

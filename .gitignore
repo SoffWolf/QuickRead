@@ -13,8 +13,7 @@ submit.sh
 submit_v2.sh
 venv/
 wandb/
-__pycache__/reward_model.cpython-36.pyc
-__pycache__/reward_model.cpython-38.pyc
+__pycache__/*
 _scratch_work_nguyent86_QuickRead_reddit_default_1.0.0_98ba5abea674d3178f7588aa6518a5510dc0c6fa8176d9653a3546d5afcb3969.lock
 bin/
 downloads/
@@ -24,3 +23,26 @@ lib64
 pip-selfcheck.json
 pyvenv.cfg
 
+/PPO_training/__pycache__/*
+/PPO_training/QuickRead/*
+/PPO_trainin/HF_HOME/*
+/PPO_training/hfAPI.txt
+/PPO_training/training.py.save
+/PPO_training/training.py.save.1
+/PPO_training/wandb/*
+/PPO_training/ppo_train_testHF.out
+/fine_tune/HFpipeline/HF_HOME/*
+/fine_tune/HFpipeline/tst-summarization-Pegasus/*
+/fine_tune/HFpipeline/test_pegasus-fine-tune.out
+/fine_tune/HFpipeline/submit.sh
+/fine_tune/HFpipeline/requirements.txt
+/rewards/__pycache__/*
+/rewards/QuickRead/*
+/rewards/reward_model_weight/*
+/rewards/reward_model_weight_Sep/*
+/rewards/reward_training_data/*
+/rewards/submit_reward_update.sh
+/rewards/test_rm_09.02.out  
+/rewards/test_rm_pegasus-fine-tune.out
+/rewards/test_rm_pegasus-reddit_tifu.out
+/rewards/wandb/*

@@ -132,8 +132,8 @@ class PPOTrainer:
         model_input = torch.cat((query, response), axis=-1)
 
         t = time.time()
-        print("gen len: ", gen_len)
-        print("model_inp`ut: ", model_input.shape)
+        #print("gen len: ", gen_len)
+        #print("model_inp`ut: ", model_input.shape)
         logprobs, ref_logprobs, values = self.batched_forward_pass(model_input, gen_len)
         timing['time/ppo/forward_pass'] = time.time()-t
 
@@ -183,13 +183,13 @@ class PPOTrainer:
 
         for i in range(int(self.ppo_params['batch_size']/fbs)):
             m_input = model_input[i*fbs:(i+1)*fbs]
-            print("Forward batch size: ", fbs)
+            #print("Forward batch size: ", fbs)
             logits, _, v = self.model(m_input)
             ref_logits, _, _ = self.ref_model(m_input)
 
             values.append(v[:, -gen_len-1:-1].detach())
-            print("logits: ", logits.shape)
-            print("m_input: ", m_input.shape)
+            #print("logits: ", logits.shape)
+            #print("m_input: ", m_input.shape)
             logprobs.append(logprobs_from_logits(logits[:,:-1,:], m_input[:,1:])[:, -gen_len:].detach())
             ref_logprobs.append(logprobs_from_logits(ref_logits[:,:-1,:], m_input[:,1:])[:, -gen_len:].detach())
 

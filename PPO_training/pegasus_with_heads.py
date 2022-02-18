@@ -57,8 +57,8 @@ class PegasusWithValueHead(nn.Module):
         hidden_states = x.encoder_last_hidden_state
         lm_logits = self.lm_head(hidden_states)
         value = self.v_head(hidden_states).squeeze(-1)
-        print("lm_logits.shape : ", lm_logits.shape) 
-        print("Value after squeeze: ", value.shape)
+        #print("lm_logits.shape : ", lm_logits.shape) 
+        #print("Value after squeeze: ", value.shape)
         outputs = (lm_logits,) + (torch.zeros((1,1)),) + (value,)
         return outputs
     def generate(self, post_tokens):
