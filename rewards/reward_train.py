@@ -99,8 +99,8 @@ class Dataset(torch.utils.data.Dataset):
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-tokenizer = PegasusTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
-supervised_baseline = PegasusModel.from_pretrained("SophieTr/fine-tune-Pegasus") # Tobechange
+tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05")
+supervised_baseline = PegasusModel.from_pretrained("QuickRead/pegasus-reddit-7e05") # Tobechange
 
 model = RewardModel(supervised_baseline)
 
@@ -108,8 +108,9 @@ keys_file = open("../PPO_training/hfAPI.txt")
 key = keys_file.readlines()[0].rstrip()
 #print(key)
 
-#save_directory = "QuickRead/Reward_training_Pegasus_xsum"
-#model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_xsum', key, "QuickRead")
+### TO BE UNCOMMENT AFTER DEBUG
+#save_directory = "QuickRead/Reward_training_Pegasus_reddit"
+#model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_reddit', key, "QuickRead")
 
 # WANDB 
 # import wandb
@@ -118,7 +119,7 @@ key = keys_file.readlines()[0].rstrip()
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "experiment-2022-xsum"
+display_name = "experiment-2022-reddit-zeros"
 wandb.init(entity=group, project=project, name=display_name)
 
 
@@ -175,8 +176,9 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 predicted_reward_2 = model(post_id, sum2_id, device=device)
                 #print("predicted_reward_1: ", predicted_reward_1)
                 #print("predicted_reward_2: ",predicted_reward_2)
-            except: 
+            except Exception as e: 
                 print("ERROR IN TRAIN LOOP (1)")
+                print(e)
                 print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
                 continue
             optimizer.zero_grad()
@@ -295,11 +297,11 @@ def train(model, train_data, val_data, learning_rate, epochs):
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
     # torch.save(model.state_dict(), PATH)
-    torch.save(checkpoint, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5v-zeros", 'epoch-{}.pth'.format(epoch_num+1)))
 
     # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
-    model.push_to_hub("QuickRead/PPO_training")
-    tokenizer.push_to_hub("QuickRead/PPO_training")
+    model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
+    tokenizer.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
     
 
 EPOCHS = 5

@@ -19,10 +19,10 @@ from rewards.reward_model import RewardModel
 
 
 config = {
-    "lm_name": "SophieTr/fine-tune-Pegasus",   # policy: supervised baseline
-    "ref_lm_name": "SophieTr/fine-tune-Pegasus",   # find out about the ref model
-    "cls_model_name": "SophieTr/fine-tune-Pegasus",   # reward model
-    "tk_name": "gpt2",    # tokenizer name
+    "lm_name": "QuickRead/pegasus-reddit-full",   # policy: supervised baseline
+    "ref_lm_name": "QuickRead/pegasus-reddit-full",   # find out about the ref model
+    "cls_model_name": "QuickRead/Reward_training_Pegasus_reddit",   # reward model
+    "tk_name": "QuickRead/pegasus-reddit-full",    # tokenizer name
     "steps": 25600,
     "batch_size": 8,
     "forward_batch_size":4,
@@ -43,17 +43,17 @@ config = {
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
-display_name = "experiment-2022-27-1"
+display_name = "experiment-2022-reddit-full-v1"
 wandb.init(entity=group, project=project, name=display_name, config=config)
 
 
 
 # load supervised baseline
-supervised_baseline = PegasusForConditionalGeneration.from_pretrained("SophieTr/fine-tune-Pegasus", cache_dir="HF_HOME")
+supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-full", cache_dir="HF_HOME")
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)
-reward_model.load_state_dict(torch.load(os.path.join("../rewards/reward_model_weight/epoch-1.pth")), strict=False)
+reward_model.load_state_dict(torch.load(os.path.join("../rewards/reward_training_Pegasus/epoch-5.pth")), strict=False)
 
 # Policy model
 policy = PegasusWithValueHead(supervised_baseline)
@@ -65,9 +65,9 @@ keys_file = open("hfAPI.txt")
 key = keys_file.readlines()[0].rstrip()
 #print(key)
 
-tokenizer = PegasusTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus", cache_dir="HF_HOME")
+tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-full", cache_dir="HF_HOME")
 
-save_directory = "QuickRead/PPO_training"
+save_directory = "ppo-training-09March"
 #policy.save(save_directory, True, 'https://huggingface.co/QuickRead/PPO_training', key, "QuickRead")
 # Wandb
 wandb.watch(policy, log='all')
@@ -106,33 +106,40 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     rewards = []
     
     for i in range(int(config["batch_size"] / fbs)):
-        query = query_batch[i*fbs:(i+1)*fbs]
-        query = map(lambda x: x[0], query.values.tolist())
-        #print(type(query), query.items())
-        query = list(query)
-        query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
-        #print("QUERY after tokenizer: ", query, type(query))
-        query = query.to(device)
-        #print("query: ", query.shape)
-        #logits, response, values = policy(query)
-        response = policy.generate(query)
-        #response = torch.FloatTensor(response)
-        #response = response.to(device)
         try:
+            query = query_batch[i*fbs:(i+1)*fbs]
+            query = map(lambda x: x[0], query.values.tolist())
+            #print(type(query), query.items())
+            query = list(query)
+            query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
+        
+        
+            query = query.to(device)
+            #logits, response, values = policy(query)
+            response = policy.generate(query)
+            #response = torch.FloatTensor(response)
+            response = response.to(device)
             reward = reward_model(query, response).detach()
-        except:
-            pass
-        #for k in range(fbs):
-        #    query_tensors = query_tensors.append(query[k])
-        #    response_tensors = response_tensors.append(response[k])
-        query_tensors = query_tensors + list(torch.split(query,1))
-        response_tensors = response_tensors + list(torch.split(response,1))
-        rewards.append(reward)
+            reward = reward.to(device)
+            query_tensors = query_tensors + list(torch.split(query,1))
+            response_tensors = response_tensors + list(torch.split(response,1))
+            rewards.append(reward)
+            
+            query_tensors = torch.tensor(query_tensors).to(device)
+            response_tensors = torch.tensor(response_tensors).to(device)
+            rewards = torch.tensor(rewards).to(device)
+        except Exception as e1:
+            print(e1)
+            
+            print("\n\nFOR-LOOP 1\n")
+            continue
+
     for k in range(len(query_tensors)):
         query_tensors[k] = query_tensors[k].squeeze(0)
         response_tensors[k] = response_tensors[k].squeeze(0)
     #print("query_tensors: ", len(query_tensors), query_tensors[0].shape,query_tensors[1].shape )
     #print("response_tensors: ", len(response_tensors), response_tensors[0].shape,response_tensors[1].shape )
+  
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
     query_tensors = query_tensors.unsqueeze(dim=0).to(device)
@@ -141,10 +148,14 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     
     query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
     response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-    #print("query_tensors: ", query_tensors.shape)
-    #print("response_tensors: ", response_tensors.shape)
-    #print("rewards: ", rewards.shape)
-
+        #print("query_tensors: ", query_tensors.shape)
+        #print("response_tensors: ", response_tensors.shape)
+        #print("rewards: ", rewards.shape)
+    
+    #except Exception as e2:
+    #    print(e2)
+    #    print("\n\nFOR-LOOP 2\n")
+    #    continue
     #### Run PPO training 
     stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
      

@@ -43,6 +43,8 @@ from transformers import (
     MBartTokenizerFast,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
+    Trainer,
+    TrainingArguments,
     set_seed,
 )
 from transformers.file_utils import is_offline_mode
@@ -52,7 +54,7 @@ from transformers.utils.versions import require_version
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-#check_min_version("4.17.0.dev0")
+check_min_version("4.16.0")
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/summarization/requirements.txt")
 
@@ -71,36 +73,6 @@ except (LookupError, OSError):
 # A list of all multilingual tokenizer which require lang attribute.
 MULTILINGUAL_TOKENIZERS = [MBartTokenizer, MBartTokenizerFast, MBart50Tokenizer, MBart50TokenizerFast]
 
-# @dataclass 
-# class Seq2SeqTrainingArguments:
-#     """
-#     Arguments is the subset of the arguments we use in our example scripts **which relate to the training loop
-#     itself**.
-#     """
-#     learning_rate:float = field(
-#         default=5e-5, metadata={"help" :"The initial learning rate for [`AdamW`] optimizer."}
-#         )
-#     weight_decay:float = field(
-#         default=0, metadata={"help" :"The weight decay to apply (if not zero) to all layers except all bias and LayerNorm weights in [`AdamW`] optimizer."}
-#         )
-#     num_train_epochs:float = field(
-#         default=3.0, metadata={"help": "Total number of training epochs to perform."}
-#     )
-#     save_step:int = field(
-#         default=500, metadata={"help": "Save checkpoint every X updates steps."}
-#     )
-#     lr_scheduler_type:str = field(
-#         default='linear', metadata={"help": "The scheduler type to use. See the documentation of [`SchedulerType`] for all possible values."}
-#     )
-#     warmup_steps:int = field(
-#         default=0, metadata={"help": " Number of steps used for a linear warmup from 0 to `learning_rate`. Overrides any effect of `warmup_ratio`."}
-#     )
-#     push_to_hub:bool = field(
-#         default=False, metadata={"help": "Whether or not to push the model to the Hub every time the model is saved."}
-#     )
-#     hub_model_id:str = field(
-#         default=None, metadata={"help": "The name of the repository to keep in sync with the local `output_dir`."}
-#     )
 @dataclass
 class ModelArguments:
     """
@@ -453,7 +425,7 @@ def main():
     if training_args.do_train:
         column_names = raw_datasets["train"].column_names
     elif training_args.do_eval:
-        column_names = raw_datasets["valid"].column_names
+        column_names = raw_datasets["validation"].column_names
     elif training_args.do_predict:
         column_names = raw_datasets["test"].column_names
     else:
@@ -711,11 +683,7 @@ def main():
     if data_args.lang is not None:
         kwargs["language"] = data_args.lang
 
-    if training_args.push_to_hub:
-        trainer.push_to_hub(**kwargs)
-    else:
-        trainer.create_model_card(**kwargs)
-
+    trainer.push_to_hub("QuickRead/fine-tune-Pegasus")
     return results
 
 

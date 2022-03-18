@@ -24,10 +24,12 @@ def gather_one(x, indices, *, dim):
     """
     Gather with only one element along the gathered dimension
     """
+    print("Indices.shape = ", indices.shape, "\nIndices:\n\t", indices, "\nindices.unsqueeze(", dim, "): \n\t", indices.unsqueeze(dim))
     return torch.gather(x, dim=dim, index=indices.unsqueeze(dim)).squeeze(dim)
 
 def _response_indices(response_tokens):
     indices = first_true_indices(response_tokens == PADDING_TOKEN) - 1
+    print("\nResult from first true indices:\n\t ", indices)
     return torch.max(indices, torch.zeros([1], dtype=indices.dtype, device=response_tokens.device))
 
 
@@ -52,34 +54,30 @@ class RewardModel(nn.Module):
 	
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
         outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        #x = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        #print("Outputs from PegasusConditional with head: ", outputs)
         
         # go through custom layer
-        #x = x.last_hidden_state
-        #print("shape of last hidden states: ", outputs[0].shape)
         x = outputs.encoder_last_hidden_state
         
-        #print("Before calling head!")
         if device is not None: 
           values = self.head(x.to(device))
         else: 
           values = self.head(x)
-        #print("After calling head")
         values = values.squeeze(dim=-1)
+        
         # Call split_ 
         response_values = values[:, len_post:] 
         response_values = response_values.to(device)
         #print("response_values: ", response_values)
         # call gather_one
         # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
-        # print("REWARD: ", reward)
-
-        last_response_indices = _response_indices(summary_tokens)
+        
+        #last_response_indices = _response_indices(summary_tokens)
+        last_response_indices = torch.tensor([0])
         last_response_indices = last_response_indices.to(device)
         reward = gather_one(
             response_values, last_response_indices, dim=-1
         )
+        print("\nREWARD: ", reward)	
         return reward
 
     def save(self, save_dir, push, repo, key, org):
