@@ -103,7 +103,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05")
 supervised_baseline = PegasusModel.from_pretrained("QuickRead/pegasus-reddit-7e05") # Tobechange
 
 model = RewardModel(supervised_baseline)
-
+print("Init REWARD MODEL DONE!")
 keys_file = open("../PPO_training/hfAPI.txt")
 key = keys_file.readlines()[0].rstrip()
 #print(key)
@@ -154,14 +154,15 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     # WANDB 
     wandb.watch(model, log="all")
-
+    print("ENTERING FOR EPOCH LOOP") 
     for epoch_num in range(epochs):
         total_acc_train = 0
         total_loss_train = 0
         acc_per_100 = 0
         step = 0
+        print("BEFORE TRAIN LOOP")
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
-
+            print("GOT to train loop")
             # Input
             post_id = post['input_ids'].squeeze(1).to(device)
             sum1_id = sum1['input_ids'].squeeze(1).to(device)
@@ -170,17 +171,20 @@ def train(model, train_data, val_data, learning_rate, epochs):
             #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             #post_id, sum1_id, sum2_id = post_id.to(device), sum1_id.to(device), sum2_id.to(device)
             #print("SHAPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
-            try:
+            #try:
                 # Output rewards
-                predicted_reward_1 = model(post_id, sum1_id, device=device)
-                predicted_reward_2 = model(post_id, sum2_id, device=device)
-                #print("predicted_reward_1: ", predicted_reward_1)
-                #print("predicted_reward_2: ",predicted_reward_2)
-            except Exception as e: 
-                print("ERROR IN TRAIN LOOP (1)")
-                print(e)
-                print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
-                continue
+            
+            print("GET after inputs, before MODEL call")
+            predicted_reward_1 = model(post_id, sum1_id)
+            predicted_reward_2 = model(post_id, sum2_id)
+            print("predicted_reward_1: ", predicted_reward_1.shape,"\n", predicted_reward_1)
+            print("predicted_reward_2: ",predicted_reward_2.shape, "\n", predicted_reward_2
+)
+            #except Exception as e: 
+                #print("ERROR IN TRAIN LOOP (1)")
+                #print(e)
+                #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+                #continue
             optimizer.zero_grad()
 
             # Loss and accuracy
@@ -214,6 +218,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
         total_loss_val = 0
         step = 0
         acc_per_100 = 0
+        print("BEFORE VAL LOOP")
         with torch.no_grad():
 
             for post, split, sum1, sum2, label in tqdm(val_dataloader):
@@ -225,16 +230,16 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
                 label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
 
-                try:
+                #try:
                     # Output rewards
-                    predicted_reward_1 = model(post_id, sum1_id, device=device)
-                    predicted_reward_2 = model(post_id, sum2_id, device=device)
+                predicted_reward_1 = model(post_id, sum1_id)
+                predicted_reward_2 = model(post_id, sum2_id)
                     #print("predicted_reward_1: ", predicted_reward_1)
                     #print("predicted_reward_2: ",predicted_reward_2)
-                except: 
-                    print("ERROR IN TRAIN LOOP (2)")
-                    print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
-                    continue
+                #except: 
+                    #print("ERROR IN TRAIN LOOP (2)")
+                    #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
+                    #continue
 
                 # # Output rewards
                 # predicted_reward_1 = model(post_id, sum1_id, device=device)

@@ -25,7 +25,7 @@ config = {
     "tk_name": "QuickRead/pegasus-reddit-full",    # tokenizer name
     "steps": 25600,
     "batch_size": 8,
-    "forward_batch_size":4,
+    "forward_batch_size":1,
     "ppo_epochs": 1,   
     "txt_in_len": 5,
     "txt_out_len": 15,
@@ -111,23 +111,27 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
             query = map(lambda x: x[0], query.values.tolist())
             #print(type(query), query.items())
             query = list(query)
-            query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
-        
-        
+            query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids 
             query = query.to(device)
+            print("QUERY (", i, ") = ",query.shape)
             #logits, response, values = policy(query)
             response = policy.generate(query)
             #response = torch.FloatTensor(response)
             response = response.to(device)
+            print("RESPONSE (", i, ") = ", response.shape)
+
             reward = reward_model(query, response).detach()
             reward = reward.to(device)
+            print("Rewards (", i, ") = ", reward)
+
             query_tensors = query_tensors + list(torch.split(query,1))
+            print("Die at Q_tensor")
             response_tensors = response_tensors + list(torch.split(response,1))
-            rewards.append(reward)
             
-            query_tensors = torch.tensor(query_tensors).to(device)
-            response_tensors = torch.tensor(response_tensors).to(device)
-            rewards = torch.tensor(rewards).to(device)
+            print("Die at Response_tensor")
+            rewards.append(reward)
+            print("Die at Reward_tensor")
+            
         except Exception as e1:
             print(e1)
             
@@ -139,12 +143,15 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
         response_tensors[k] = response_tensors[k].squeeze(0)
     #print("query_tensors: ", len(query_tensors), query_tensors[0].shape,query_tensors[1].shape )
     #print("response_tensors: ", len(response_tensors), response_tensors[0].shape,response_tensors[1].shape )
-  
+      
     query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
     response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
     query_tensors = query_tensors.unsqueeze(dim=0).to(device)
     response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+    
+    print("Rewards before torch.cat: ", rewards)
     rewards = torch.cat(rewards).to(device)
+    print("Rewards after torch.cat: ", rewards)
     
     query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
     response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])

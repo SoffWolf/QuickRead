@@ -123,6 +123,9 @@ class PPOTrainer:
         returns:
             train_stats (dict): a summary of the training statistics
         """
+        print("query.shape: ", query.shape, "should have shape [batch_size, query_length]")
+        print("response.shape: ", response.shape, "should have shape [batch_size, response_length]")
+        print("rewards.shape: ", scores.shape, "should have shape [batch_size]")
 
         bs = self.ppo_params['batch_size']
         timing = dict()

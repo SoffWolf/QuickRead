@@ -46,38 +46,61 @@ class RewardModel(nn.Module):
         head = nn.Linear(d_model, 1)
         nn.init.normal_(head.weight, std=init_std) #nn.init: initialize weight for a single layer
         nn.init.zeros_(head.bias)
-        self.head = head 
+        self.head = head
+        #print("Before device 1")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
+        #print("after self.device")
+        self.head = self.head.to(self.device)
+        self.fix_length = 512
+        self.better_gather = nn.Linear(self.fix_length, 1)
+        _ = self.better_gather.to(self.device)
+        #print("After self.better_gather.to(device)")
 
-    def forward(self, post_tokens, summary_tokens, device=None):
+    def forward(self, post_tokens, summary_tokens):
+        #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #print("Device = ", device)
         len_post = post_tokens.shape[-1]
+        #print("After len_post")
         input_ids = torch.concat((post_tokens, summary_tokens), axis=-1)
-	
+        #print("After input_ids")
+
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
+        #print("After decoder_input_ids")
+
+        input_ids = input_ids.to(self.device)
+        decoder_input_ids = decoder_input_ids.to(self.device)
+        #print("After input_ids, decoder_ids . to(Device)")
         outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        
+        print("After output")
         # go through custom layer
         x = outputs.encoder_last_hidden_state
-        
-        if device is not None: 
-          values = self.head(x.to(device))
-        else: 
-          values = self.head(x)
+        print("After x")
+        #if device is not None: 
+        values = self.head(x.to(self.device))
+        #else: 
+          #values = self.head(x)
         values = values.squeeze(dim=-1)
-        
+        print("Values.shape: ", values.shape)
+        reward = F.pad(input=values, pad = (1, self.fix_length - values.shape[1] - 1), mode='constant', value=0) 
         # Call split_ 
-        response_values = values[:, len_post:] 
-        response_values = response_values.to(device)
+        #response_values = values[:, len_post:] 
+        #response_values = response_values.to(device)
         #print("response_values: ", response_values)
         # call gather_one
         # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
         
         #last_response_indices = _response_indices(summary_tokens)
-        last_response_indices = torch.tensor([0])
-        last_response_indices = last_response_indices.to(device)
-        reward = gather_one(
-            response_values, last_response_indices, dim=-1
-        )
-        print("\nREWARD: ", reward)	
+        #last_response_indices = torch.tensor([0])
+        #last_response_indices = last_response_indices.to(device)
+        #reward = gather_one(
+        #    response_values, last_response_indices, dim=-1
+        #)
+   
+        print("\nREWARD before better_gather: ", reward.shape, "\n", reward)
+        reward = self.better_gather(reward)
+        print("\nREWARD after better_gather: ", reward.shape, "\n", reward)
+        reward = reward.to(self.device)	
         return reward
 
     def save(self, save_dir, push, repo, key, org):
