@@ -119,7 +119,7 @@ key = keys_file.readlines()[0].rstrip()
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "experiment-2022-reddit-zeros"
+display_name = "reward_model_wandb_7e5_FFNN"
 wandb.init(entity=group, project=project, name=display_name)
 
 
@@ -302,7 +302,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
     # torch.save(model.state_dict(), PATH)
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5v-zeros", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_FFNN", 'epoch-{}.pth'.format(epoch_num+1)))
 
     # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
     model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")

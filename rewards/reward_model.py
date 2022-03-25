@@ -53,8 +53,12 @@ class RewardModel(nn.Module):
         #print("after self.device")
         self.head = self.head.to(self.device)
         self.fix_length = 512
-        self.better_gather = nn.Linear(self.fix_length, 1)
-        _ = self.better_gather.to(self.device)
+        
+        # New NN for better gather_one
+        self.lin = nn.Linear(self.fix_length, 10) 
+        self.dropout = nn.Dropout(0.1)                # dropout layer
+        self.out = nn.Linear(10, len(self.word2idx)+1) # output layer
+        #_ = self.better_gather.to(self.device)
         #print("After self.better_gather.to(device)")
 
     def forward(self, post_tokens, summary_tokens):
@@ -98,7 +102,11 @@ class RewardModel(nn.Module):
         #)
    
         print("\nREWARD before better_gather: ", reward.shape, "\n", reward)
-        reward = self.better_gather(reward)
+        y = self.lin(reward)
+        y = F.relu(y)
+        y = self.dropout(y)
+        
+        reward = self.out(y)
         print("\nREWARD after better_gather: ", reward.shape, "\n", reward)
         reward = reward.to(self.device)	
         return reward
