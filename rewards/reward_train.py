@@ -103,7 +103,6 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05")
 supervised_baseline = PegasusModel.from_pretrained("QuickRead/pegasus-reddit-7e05") # Tobechange
 
 model = RewardModel(supervised_baseline)
-print("Init REWARD MODEL DONE!")
 keys_file = open("../PPO_training/hfAPI.txt")
 key = keys_file.readlines()[0].rstrip()
 #print(key)
@@ -119,7 +118,7 @@ key = keys_file.readlines()[0].rstrip()
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "reward_model_wandb_7e5_FFNN"
+display_name = "reward_model_wandb_7e5_gatherone"
 wandb.init(entity=group, project=project, name=display_name)
 
 
@@ -162,7 +161,6 @@ def train(model, train_data, val_data, learning_rate, epochs):
         step = 0
         print("BEFORE TRAIN LOOP")
         for post, split, sum1, sum2, label in tqdm(train_dataloader):
-            print("GOT to train loop")
             # Input
             post_id = post['input_ids'].squeeze(1).to(device)
             sum1_id = sum1['input_ids'].squeeze(1).to(device)
@@ -170,7 +168,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
             #print("TYPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
             #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             #post_id, sum1_id, sum2_id = post_id.to(device), sum1_id.to(device), sum2_id.to(device)
-            #print("SHAPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
+            print("SHAPES of post_id, sum1_id, sum2_id: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
             #try:
                 # Output rewards
             
@@ -302,7 +300,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
     # torch.save(model.state_dict(), PATH)
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_FFNN", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_gatherone", 'epoch-{}.pth'.format(epoch_num+1)))
 
     # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
     model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
