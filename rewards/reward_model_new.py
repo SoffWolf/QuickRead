@@ -25,13 +25,13 @@ def gather_one(x, indices, *, dim):
     """
     Gather with only one element along the gathered dimension
     """
-    print("Indices.shape = ", indices.shape, "\nIndices:\n\t", indices, "\nindices.unsqueeze(", dim, "): \n\t", indices.unsqueeze(dim))
+    # print("Indices.shape = ", indices.shape, "\nIndices:\n\t", indices, "\nindices.unsqueeze(", dim, "): \n\t", indices.unsqueeze(dim))
     return torch.gather(x, dim=dim, index=indices.unsqueeze(dim)).squeeze(dim)
 
 
 def _response_indices(response_tokens):
     indices = first_true_indices(response_tokens == PADDING_TOKEN) - 1
-    print("\nResult from first true indices:\n\t ", indices)
+    # print("\nResult from first true indices:\n\t ", indices)
     return torch.max(indices, torch.zeros([1], dtype=indices.dtype, device=response_tokens.device))
 
 
@@ -45,7 +45,7 @@ class RewardModel(nn.Module):
         # Add a randomly initialized linear head that outputs a scalar value
         init_std = init_scales / np.sqrt(d_model + 1)  #.get(name, 1.0)
         head = nn.Linear(d_model, 1)
-        nn.init.normal_(head.weight, std=init_std) #nn.init: initialize weight for a single layer
+        nn.init.normal_(head.weight, std=init_std) 
         nn.init.zeros_(head.bias)
         self.head = head
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,36 +54,46 @@ class RewardModel(nn.Module):
         
     def forward(self, post_tokens, summary_tokens):
         len_post = post_tokens.shape[-1]
-        print(len_post)
         input_ids = torch.concat((post_tokens, summary_tokens), axis=-1)
-        print("Shape of input_ids: ", input_ids.shape)
 
         decoder_input_ids =  torch.concat((post_tokens, summary_tokens), axis=-1)
-        print("Shape of decoder_input_ids: ", decoder_input_ids.shape)
 
         input_ids = input_ids.to(self.device)
         decoder_input_ids = decoder_input_ids.to(self.device)
         outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        print("Shape of outputs: ", outputs.shape)
+        print("After output")
         # go through custom layer
         x = outputs.encoder_last_hidden_state
-        print("Shape of x: ", x.shape)
+        print("After x")
+        #if device is not None: 
         values = self.head(x.to(self.device))
-        print("Shape of values: ", values.shape)
+        #else: 
+          #values = self.head(x)
         values = values.squeeze(dim=-1)
-        print("Shape of value after squeeze: ", values.shape)
+        print("Values.shape: ", values.shape)
+        reward = F.pad(input=values, pad = (1, self.fix_length - values.shape[1] - 1), mode='constant', value=0) 
+        # Call split_ 
+        #response_values = values[:, len_post:] 
+        #response_values = response_values.to(device)
+        #print("response_values: ", response_values)
+        # call gather_one
+        # reward = gather_one(response_values, dim=0, index=torch.LongTensor([[0]]).to(device))#.squeeze(1).squeeze(1)
         
-        last_response_indices = _response_indices(summary_tokens)
-        print("Shape of last_response_indices: ", last_response_indices.shape)
-        last_response_indices = last_response_indices.to(device)
-        reward = gather_one(
-            response_values, last_response_indices, dim=-1
-        )
-        print("Shape of reward after gather_one: ", reward.shape)
+        #last_response_indices = _response_indices(summary_tokens)
+        #last_response_indices = torch.tensor([0])
+        #last_response_indices = last_response_indices.to(device)
+        #reward = gather_one(
+        #    response_values, last_response_indices, dim=-1
+        #)
    
-        # reward = self.out(y)
-        # print("\nREWARD after better_gather: ", reward.shape, "\n", reward)
-        # reward = reward.to(self.device)	
+        print("\nREWARD before better_gather: ", reward.shape, "\n", reward)
+        y = self.lin(reward)
+        y = F.relu(y)
+        y = self.dropout(y)
+        
+        reward = self.out(y)
+        print("\nREWARD after better_gather: ", reward.shape, "\n", reward)
+        reward = reward.to(self.device)	
         return reward
 
     def save(self, save_dir, push, repo, key, org):
