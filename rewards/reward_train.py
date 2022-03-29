@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.functional as F
+import torch.nn.utils.rnn import pad_sequence
 from reward_model import RewardModel
 from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
@@ -12,6 +13,7 @@ from torch.optim import Adam
 from tqdm import tqdm
 import wandb
 import os
+
 
 # First import the json data into pandas dataframes
 numbers = [i+3 for i in range (18)] + [22]
@@ -90,11 +92,9 @@ class Dataset(torch.utils.data.Dataset):
         return self.summary2[idx]
     def __getitem__(self, idx):
         batch_post = self.get_batch_posts(idx)
-        batch_split = self.get_batch_split(idx)
         batch_sum1 = self.get_batch_sum1(idx)
         batch_sum2 = self.get_batch_sum2(idx)
-        batch_labels = self.get_batch_labels(idx)
-        return batch_post, batch_split, batch_sum1, batch_sum2, batch_labels
+        return batch_post, batch_sum1, batch_sum2
 
 np.random.seed(112)
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
@@ -110,6 +110,62 @@ key = keys_file.readlines()[0].rstrip()
 ### TO BE UNCOMMENT AFTER DEBUG
 #save_directory = "QuickRead/Reward_training_Pegasus_reddit"
 #model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_reddit', key, "QuickRead")
+
+
+#Collate
+def collate(list_of_samples):
+    """Merges a list of samples to form a mini-batch.
+
+    Args:
+      list_of_samples is a list of tuples (src_seq, tgt_seq):
+          src_seq is of shape (src_seq_length)
+          tgt_seq is of shape (tgt_seq_length)
+
+    Returns:
+      src_seqs of shape (max_src_seq_length, batch_size): LongTensor of padded source sequences.
+      src_mask of shape (max_src_seq_length, batch_size): BoolTensor (tensor with boolean elements) indicating which
+          elements of the src_seqs tensor should be ignored in computations: True values in src_mask correspond
+          to padding values in src_seqs.
+      tgt_seqs of shape (max_tgt_seq_length+1, batch_size): LongTensor of padded target sequences.
+    """
+    # YOUR CODE HERE
+    posts = []
+    post_mask = []
+    sum1s = []
+    sum2s = []
+    print("into collate: ", list_of_samples[0])
+    # paste data to src_seqs, tgt_seqs
+    for i in list_of_samples:
+        posts.append(i[0])
+        sum1s.append(i[1])
+        sum2s.append(i[2])
+    print("done appending: ", posts[0], "\n sum1: ", sum1s[0], "\n sum2: ", sum2s[0])
+    # zero-padding 
+    posts = pad_sequence(posts, padding_value=0)
+    sum1s = pad_sequence(sum1s, padding_value=0)
+    sum2s = pad_sequence(sum2s, padding_value=0)
+    print("Done padding: ", posts.shape, sum1s.shape, sum2s.shape)
+    # transfor src_seqs to src_mask
+    for i in posts:
+        row = []
+        for j in i:
+            if j==0:
+                row.append(1)
+            else: 
+                row.append(0)
+        post_mask.append(row)
+    post_mask = torch.BoolTensor(post_mask)                 # tranform to right dtype: torch.bool
+
+    sos1_ = torch.zeros(1, sum1s.shape[1])             # create sos_token with right shape
+    sos2_ = torch.zeros(1, sum2s.shape[1])             # create sos_token with right shape
+    sum1s = torch.cat((sos1_, sum1s), dim = 0).long() # insert to tgt_seqs as 1st row
+    sum2s = torch.cat((sos2_, sum2s), dim = 0).long() # insert to tgt_seqs as 1st row
+    print("et o et: ", sum1s.shape, sum2s.shape)
+#     print(f'tgt_seqs:\n {tgt_seqs}')
+#     print(f'src_seqs:\n {src_seqs}')
+#     print(f'src_mask:\n {src_mask}')
+    return post, post_mask, sum1s, sum2s
+
 
 # WANDB 
 # import wandb
@@ -143,8 +199,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=1, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val, batch_size=1)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=8, collate_fn=collate, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=8)
 
     if use_cuda:
         model = model.cuda()
