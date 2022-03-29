@@ -64,7 +64,7 @@ class RewardModel(nn.Module):
         input_ids = input_ids.to(self.device)
         decoder_input_ids = decoder_input_ids.to(self.device)
         outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-        print("Shape of outputs: ", outputs.shape)
+        # print("Shape of outputs: ", outputs.shape)
         # go through custom layer
         x = outputs.encoder_last_hidden_state
         print("Shape of x: ", x.shape)
