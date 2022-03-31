@@ -73,9 +73,13 @@ class RewardModel(nn.Module):
         values = values.squeeze(dim=-1)
         print("Shape of value after squeeze: ", values.shape)
         
+        response_values = values[:, len_post:] 
+        response_values = response_values.to(self.device)
+        print("Shape of response_values: ", response_values.shape)
+        
         last_response_indices = _response_indices(summary_tokens)
         print("Shape of last_response_indices: ", last_response_indices.shape)
-        last_response_indices = last_response_indices.to(device)
+        last_response_indices = last_response_indices.to(self.device)
         reward = gather_one(
             response_values, last_response_indices, dim=-1
         )

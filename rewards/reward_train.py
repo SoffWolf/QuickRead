@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.functional as F
-import torch.nn.utils.rnn import pad_sequence
+from torch.nn.utils.rnn import pad_sequence
 from reward_model import RewardModel
 from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
@@ -66,10 +66,10 @@ df = pd.DataFrame(data, columns=columns)
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
-        self.post = [tokenizer(post, return_tensors="pt") for post in df['post']]
+        self.post = [tokenizer(post, return_tensors="pt")['input_ids'] for post in df['post']]
         self.split = [split for split in df['split']]
-        self.summary1 = [tokenizer(summary1, return_tensors="pt") for summary1 in df['summary1']]
-        self.summary2 = [tokenizer(summary2, return_tensors="pt") for summary2 in df['summary2']]# padding='max_length',
+        self.summary1 = [tokenizer(summary1, return_tensors="pt")['input_ids'] for summary1 in df['summary1']]
+        self.summary2 = [tokenizer(summary2, return_tensors="pt")['input_ids'] for summary2 in df['summary2']]# padding='max_length',
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
@@ -136,15 +136,15 @@ def collate(list_of_samples):
     print("into collate: ", list_of_samples[0])
     # paste data to src_seqs, tgt_seqs
     for i in list_of_samples:
-        posts.append(i[0])
-        sum1s.append(i[1])
-        sum2s.append(i[2])
-    print("done appending: ", posts[0], "\n sum1: ", sum1s[0], "\n sum2: ", sum2s[0])
+        posts.append(torch.squeeze(i[0],0))
+        sum1s.append(torch.squeeze(i[1],0))
+        sum2s.append(torch.squeeze(i[2],0))
+        #print("done appending: ", i[0].shape, "\n sum1: ", i[1].shape, "\n sum2: ", i[2].shape)
     # zero-padding 
-    posts = pad_sequence(posts, padding_value=0)
-    sum1s = pad_sequence(sum1s, padding_value=0)
-    sum2s = pad_sequence(sum2s, padding_value=0)
-    print("Done padding: ", posts.shape, sum1s.shape, sum2s.shape)
+    posts = pad_sequence(posts, True, padding_value=0)
+    sum1s = pad_sequence(sum1s, True, padding_value=0)
+    sum2s = pad_sequence(sum2s, True, padding_value=0)
+    #print("Done padding: ", posts.shape, sum1s.shape, sum2s.shape)
     # transfor src_seqs to src_mask
     for i in posts:
         row = []
@@ -156,15 +156,15 @@ def collate(list_of_samples):
         post_mask.append(row)
     post_mask = torch.BoolTensor(post_mask)                 # tranform to right dtype: torch.bool
 
-    sos1_ = torch.zeros(1, sum1s.shape[1])             # create sos_token with right shape
-    sos2_ = torch.zeros(1, sum2s.shape[1])             # create sos_token with right shape
-    sum1s = torch.cat((sos1_, sum1s), dim = 0).long() # insert to tgt_seqs as 1st row
-    sum2s = torch.cat((sos2_, sum2s), dim = 0).long() # insert to tgt_seqs as 1st row
-    print("et o et: ", sum1s.shape, sum2s.shape)
+    #sos1_ = torch.zeros(1, sum1s.shape[1])             # create sos_token with right shape
+    #sos2_ = torch.zeros(1, sum2s.shape[1])             # create sos_token with right shape
+    #sum1s = torch.cat((sos1_, sum1s), dim = 0).long() # insert to tgt_seqs as 1st row
+    #sum2s = torch.cat((sos2_, sum2s), dim = 0).long() # insert to tgt_seqs as 1st row
+    #print("et o et: ", sum1s.shape, sum2s.shape)
 #     print(f'tgt_seqs:\n {tgt_seqs}')
 #     print(f'src_seqs:\n {src_seqs}')
 #     print(f'src_mask:\n {src_mask}')
-    return post, post_mask, sum1s, sum2s
+    return posts, sum1s, sum2s
 
 
 # WANDB 
@@ -216,15 +216,16 @@ def train(model, train_data, val_data, learning_rate, epochs):
         acc_per_100 = 0
         step = 0
         print("BEFORE TRAIN LOOP")
-        for post, split, sum1, sum2, label in tqdm(train_dataloader):
+        for post, sum1, sum2 in tqdm(train_dataloader):
             # Input
-            post_id = post['input_ids'].squeeze(1).to(device)
-            sum1_id = sum1['input_ids'].squeeze(1).to(device)
-            sum2_id = sum2['input_ids'].squeeze(1).to(device)
+            print(post, "\n", sum1, "\n", sum2)
+            post_id = post.squeeze(1).to(device)
+            sum1_id = sum1.squeeze(1).to(device)
+            sum2_id = sum2.squeeze(1).to(device)
             #print("TYPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
             #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             #post_id, sum1_id, sum2_id = post_id.to(device), sum1_id.to(device), sum2_id.to(device)
-            print("SHAPES of post_id, sum1_id, sum2_id: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
+            print("SHAPES of post_id, sum1_id, sum2_id: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             #try:
                 # Output rewards
             
@@ -243,7 +244,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
             # Loss and accuracy
             batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
-            total_loss_train += batch_loss.item()
+            print("batch_loss = ", batch_loss)
+            total_loss_train += batch_loss
             step += 1
             # print("train batch loss: ", batch_loss)
             
@@ -278,9 +280,9 @@ def train(model, train_data, val_data, learning_rate, epochs):
             for post, split, sum1, sum2, label in tqdm(val_dataloader):
 
                 # Input
-                post_id = post['input_ids'].squeeze(1).squeeze(1)
-                sum1_id = sum1['input_ids'].squeeze(1).squeeze(1)
-                sum2_id = sum2['input_ids'].squeeze(1).squeeze(1)
+                post_id = post.squeeze(1).squeeze(1)
+                sum1_id = sum1.squeeze(1).squeeze(1)
+                sum2_id = sum2.squeeze(1).squeeze(1)
 
                 label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
 
@@ -303,7 +305,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
                 # Loss and accuracy
                 batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
-                total_loss_val+= batch_loss.item()
+                total_loss_val+= batch_loss
                 step += 1
                 #print("eval batch loss: ", batch_loss)
 
