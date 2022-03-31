@@ -193,7 +193,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
         # Criterion
         ret = torch.log(sigmoid_r)
         m = nn.LogSigmoid()
-        ret = m(x) * -1
+        ret = np.mean(m(x) * - 1)
         #print("\n ret from criterion = ", ret)
         return ret
 
