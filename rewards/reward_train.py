@@ -196,7 +196,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
         ret = m(x) * - 1
         print("ret: ", ret)
         print("ret type: ", type(ret))
-        ret = np.mean(ret)
+        ret = torch.mean(ret)
+        print("after mean: ", ret)
         #print("\n ret from criterion = ", ret)
         return ret
 
