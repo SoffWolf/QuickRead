@@ -281,14 +281,12 @@ def train(model, train_data, val_data, learning_rate, epochs):
         print("BEFORE VAL LOOP")
         with torch.no_grad():
 
-            for post, split, sum1, sum2, label in tqdm(val_dataloader):
+            for post, sum1, sum2 in tqdm(val_dataloader):
 
                 # Input
-                post_id = post.squeeze(1).squeeze(1)
-                sum1_id = sum1.squeeze(1).squeeze(1)
-                sum2_id = sum2.squeeze(1).squeeze(1)
-
-                label, post_id, sum1_id, sum2_id = label.to(device), post_id.to(device), sum1_id.to(device), sum2_id.to(device)
+                post_id = post.squeeze(1).to(device)
+                sum1_id = sum1.squeeze(1).to(device)
+                sum2_id = sum2.squeeze(1).to(device)
 
                 #try:
                     # Output rewards
@@ -323,7 +321,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 #             "val/batch-acc-per-step" :acc/step, 
                 #             "val/batch-total_acc_val-per-step": total_acc_val/step})
                 if step % 100 == 0:
-                    acc_per_100 = acc_per_100/100
+                    acc_per_100 = acc_per_100/800
                     # print("val batch total_acc_val/100 step: ", acc_per_100)
                     
                     # Logging
