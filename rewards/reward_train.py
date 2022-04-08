@@ -174,12 +174,12 @@ def collate(list_of_samples):
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "reward_model_wandb_7e5_gatherone"
+display_name = "reward_model_wandb_7e5_bs_8"
 wandb.init(entity=group, project=project, name=display_name)
 
 
 # training loop
-def train(model, train_data, val_data, learning_rate, epochs):
+def train(model, train_data, val_data, learning_rate, epochs, bs):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -203,8 +203,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=8, collate_fn=collate, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=8)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=bs, collate_fn=collate, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=bs)
 
     if use_cuda:
         model = model.cuda()
@@ -223,9 +223,9 @@ def train(model, train_data, val_data, learning_rate, epochs):
         for post, sum1, sum2 in tqdm(train_dataloader):
             # Input
             print(post, "\n", sum1, "\n", sum2)
-            post_id = post.squeeze(1).to(device)
-            sum1_id = sum1.squeeze(1).to(device)
-            sum2_id = sum2.squeeze(1).to(device)
+            post_id = post.to(device)
+            sum1_id = sum1.to(device)
+            sum2_id = sum2.to(device)
             #print("TYPES: ", post_id.dtype, sum1_id.dtype, sum2_id.dtype)
             #print("SHAPES: ", post_id.shape, sum1_id.shape, sum2_id.shape)
             #post_id, sum1_id, sum2_id = post_id.to(device), sum1_id.to(device), sum2_id.to(device)
@@ -264,7 +264,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
             optimizer.step()
 
             if step % 100 == 0:
-                acc_per_100 = acc_per_100/100
+                acc_per_100 = acc_per_100/(bs * 100)
                 #   print("train batch total_acc_train/step: ", acc_per_100)
                 # Logging
                 wandb.log({ "train/batch-loss": batch_loss,
@@ -284,9 +284,9 @@ def train(model, train_data, val_data, learning_rate, epochs):
             for post, sum1, sum2 in tqdm(val_dataloader):
 
                 # Input
-                post_id = post.squeeze(1).to(device)
-                sum1_id = sum1.squeeze(1).to(device)
-                sum2_id = sum2.squeeze(1).to(device)
+                post_id = post.to(device)
+                sum1_id = sum1.to(device)
+                sum2_id = sum2.to(device)
 
                 #try:
                     # Output rewards
@@ -321,7 +321,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 #             "val/batch-acc-per-step" :acc/step, 
                 #             "val/batch-total_acc_val-per-step": total_acc_val/step})
                 if step % 100 == 0:
-                    acc_per_100 = acc_per_100/800
+                    acc_per_100 = acc_per_100/(bs * 100)
                     # print("val batch total_acc_val/100 step: ", acc_per_100)
                     
                     # Logging
@@ -360,7 +360,7 @@ def train(model, train_data, val_data, learning_rate, epochs):
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
     # torch.save(model.state_dict(), PATH)
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_gatherone", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_bs_8", 'epoch-{}.pth'.format(epoch_num+1)))
 
     # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
     model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
@@ -369,7 +369,8 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
 EPOCHS = 5
 LR = 1e-6
-train(model, df_train, df_val, LR, EPOCHS)
+BATCH_SIZE = 8
+train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
 
 
 
