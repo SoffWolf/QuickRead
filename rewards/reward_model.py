@@ -34,10 +34,6 @@ def _response_indices(response_tokens):
     print("\nResult from first true indices:\n\t ", indices)
     return torch.max(indices, torch.zeros([1], dtype=indices.dtype, device=response_tokens.device))
 
-def last_token(response_tokens):
-
-
-
 class RewardModel(nn.Module):
     def __init__(self, supervised_baseline, d_model=1024, init_scales=1.0):
         super(RewardModel, self).__init__()
