@@ -141,9 +141,9 @@ def collate(list_of_samples):
         sum2s.append(torch.squeeze(i[2],0))
         #print("done appending: ", i[0].shape, "\n sum1: ", i[1].shape, "\n sum2: ", i[2].shape)
     # zero-padding 
-    posts = pad_sequence(posts, True, padding_value=0)
-    sum1s = pad_sequence(sum1s, True, padding_value=0)
-    sum2s = pad_sequence(sum2s, True, padding_value=0)
+    posts = pad_sequence(posts, True, padding_value=-1)
+    sum1s = pad_sequence(sum1s, True, padding_value=-1)
+    sum2s = pad_sequence(sum2s, True, padding_value=-1)
     #print("Done padding: ", posts.shape, sum1s.shape, sum2s.shape)
     # transfor src_seqs to src_mask
     for i in posts:
