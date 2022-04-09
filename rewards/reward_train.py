@@ -149,7 +149,7 @@ def collate(list_of_samples):
     for i in posts:
         row = []
         for j in i:
-            if j==0:
+            if j==-1:
                 row.append(1)
             else: 
                 row.append(0)

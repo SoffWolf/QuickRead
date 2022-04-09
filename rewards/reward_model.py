@@ -34,14 +34,7 @@ def _response_indices(response_tokens):
     print("\nResult from first true indices:\n\t ", indices)
     return torch.max(indices, torch.zeros([1], dtype=indices.dtype, device=response_tokens.device))
 
-
-def _zero_padding_tokens(response_tokens):
-    mask = response_tokens == PADDING_TOKEN
-    assert (
-        not (mask[:, :, 1:] < mask[:, :, :-1]).any().item()
-    ), f"Padding tokens not a suffix {to_numpy(response_tokens)}"
-    return mask, torch.masked_fill(response_tokens, mask, 0)
-
+def last_token(response_tokens):
 
 
 
@@ -90,7 +83,7 @@ class RewardModel(nn.Module):
         response_values = response_values.to(self.device)
         print("Shape of response_values: ", response_values.shape)
 
-        last_response_indices = _response_indices(summary_tokens)
+        last_response_indices = len(summary_tokens) - 1
         print("Shape of last_response_indices: ", last_response_indices.shape)
         last_response_indices = last_response_indices.to(self.device)
         reward = gather_one(
