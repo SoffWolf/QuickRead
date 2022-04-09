@@ -62,35 +62,6 @@ class RewardModel(nn.Module):
         self.device = device
         self.head = self.head.to(self.device)
         
-    def _eval(queries, responses):
-        """
-        Run a forward pass. Return all the head values, broadcasted within each replica. If an
-        eval_fn is passed, return its output across all replicas.
-
-        :return: A dict with structure:
-            eval_stats: structure from eval_fn
-            [head]: {
-                # disabled for now: query: [batch, query_len+1]
-                response: [batch, num_responses, sample_len+1]
-            }
-        """
-        queries = queries.to(self.device)
-        responses = responses.to(self.device)
-        mask, responses = _zero_padding_tokens(responses)
-        responses_per_query = responses.size(1)
-        # NOTE: could make this more efficient by sharing context work
-        tiled_queries = queries.unsqueeze(1).repeat(1, responses_per_query, 1)
-        run_tokens = torch.cat([tiled_queries, responses], dim=2).flatten(0, 1)
-
-        self.model.eval()
-        with torch.no_grad():
-            outputs = self.head(run_tokens)
-        outputs_mb = dict()
-            
-        reshaped = outputs.view(-1, responses_per_query, outputs.size()[1:])
-        d = _split_query_response_output_parts(reshaped, queries.size(1), mask)
-        return d
-
     def forward(self, post_tokens, summary_tokens):
         len_post = post_tokens.shape[-1]
         print(len_post)
@@ -102,23 +73,23 @@ class RewardModel(nn.Module):
 
         input_ids = input_ids.to(self.device)
         decoder_input_ids = decoder_input_ids.to(self.device)
-        outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        
+        self.supervised_baseline.eval()
+        with torch.no_grad():
+            outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
         # print("Shape of outputs: ", outputs.shape)
         # go through custom layer
         x = outputs.encoder_last_hidden_state
         print("Shape of x: ", x.shape)
-        # values = self.head(x.to(self.device))
-        # print("Shape of values: ", values.shape)
-        # values = values.squeeze(dim=-1)
-        # print("Shape of value after squeeze: ", values.shape)
-        # 
-        # response_values = values[:, len_post:] 
-        # response_values = response_values.to(self.device)
-        # print("Shape of response_values: ", response_values.shape)
-
-        #new
-        response_values = self._eval(post_tokens, summary_tokens)
+        values = self.head(x.to(self.device))
+        print("Shape of values: ", values.shape)
+        values = values.squeeze(dim=-1)
+        print("Shape of value after squeeze: ", values.shape)
         
+        response_values = values[:, len_post:] 
+        response_values = response_values.to(self.device)
+        print("Shape of response_values: ", response_values.shape)
+
         last_response_indices = _response_indices(summary_tokens)
         print("Shape of last_response_indices: ", last_response_indices.shape)
         last_response_indices = last_response_indices.to(self.device)
@@ -127,9 +98,6 @@ class RewardModel(nn.Module):
         )
         print("Shape of reward after gather_one: ", reward.shape)
    
-        # reward = self.out(y)
-        # print("\nREWARD after better_gather: ", reward.shape, "\n", reward)
-        # reward = reward.to(self.device)	
         return reward
 
     def save(self, save_dir, push, repo, key, org):
