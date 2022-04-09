@@ -80,7 +80,7 @@ class RewardModel(nn.Module):
         print("Shape of response_values: ", response_values.shape)
 
         last_response_indices = len(summary_tokens) - 1
-        last_response_indices = torch.tensor(last_response_indices)
+        last_response_indices = torch.tensor([last_response_indices])
         print("Shape of last_response_indices: ", last_response_indices.shape)
         last_response_indices = last_response_indices.to(self.device)
         reward = gather_one(
