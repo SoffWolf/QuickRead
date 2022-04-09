@@ -174,7 +174,7 @@ def collate(list_of_samples):
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "reward_model_wandb_7e5_bs_8"
+display_name = "reward_model_wandb_7e5_bs_1_idx"
 wandb.init(entity=group, project=project, name=display_name)
 
 
@@ -360,16 +360,16 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
     # torch.save(model.state_dict(), PATH)
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_bs_8", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_bs_1_idx", 'epoch-{}.pth'.format(epoch_num+1)))
 
     # torch.save(model, os.path.join("./reward_model_weight_5ep", 'epoch-{}.pth'.format(epoch_num+1)))
     model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
     tokenizer.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
     
 
-EPOCHS = 5
+EPOCHS = 1
 LR = 1e-6
-BATCH_SIZE = 8
+BATCH_SIZE = 1
 train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
 
 
