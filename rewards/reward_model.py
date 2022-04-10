@@ -80,6 +80,7 @@ class RewardModel(nn.Module):
         print("Shape of response_values: ", response_values.shape)
 
         last_response_indices = len(summary_tokens) - 1
+        print("last_response_indices is: ", last_response_indices)
         last_response_indices = torch.tensor([last_response_indices])
         print("Shape of last_response_indices: ", last_response_indices.shape)
         last_response_indices = last_response_indices.to(self.device)
@@ -92,5 +93,6 @@ class RewardModel(nn.Module):
 
     def save(self, save_dir, push, repo, key, org):
         self.supervised_baseline.save_pretrained(save_directory=save_dir, push_to_hub=push, repo_url=repo, use_auth_token=key, organization=org)
+
     def push_to_hub(self, repo):
         self.supervised_baseline.push_to_hub(repo)
