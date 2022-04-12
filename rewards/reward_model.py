@@ -63,9 +63,7 @@ class RewardModel(nn.Module):
         input_ids = input_ids.to(self.device)
         decoder_input_ids = decoder_input_ids.to(self.device)
         
-        self.supervised_baseline.eval()
-        with torch.no_grad():
-            outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+        outputs = self.supervised_baseline(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
         # print("Shape of outputs: ", outputs.shape)
         # go through custom layer
         x = outputs.encoder_last_hidden_state
@@ -79,7 +77,7 @@ class RewardModel(nn.Module):
         response_values = response_values.to(self.device)
         print("Shape of response_values: ", response_values.shape)
 
-        last_response_indices = len(summary_tokens) - 1
+        last_response_indices = summary_tokens.shape[1] - 1
         print("last_response_indices is: ", last_response_indices)
         last_response_indices = torch.tensor([last_response_indices])
         print("Shape of last_response_indices: ", last_response_indices.shape)
