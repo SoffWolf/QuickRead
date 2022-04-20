@@ -94,98 +94,6 @@ fbs = config['forward_batch_size']
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 n_except = 0
 for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
-<<<<<<< HEAD
-    torch.cuda.empty_cache()
-    logs = dict()
-    timing = dict()
-    t0 = time.time()
-
-    query_batch = df.sample(config["batch_size"])
-
-    query_tensors = []  # get query tensor for PPO training
-    response_tensors = []
-    rewards = []
-    
-    for i in range(int(config["batch_size"] / fbs)):
-        try:
-            query = query_batch[i*fbs:(i+1)*fbs]
-            query = map(lambda x: x[0], query.values.tolist())
-            #print(type(query), query.items())
-            query = list(query)
-            query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids 
-            query = query.to(device)
-            print("QUERY (", i, ") = ",query.shape)
-            #logits, response, values = policy(query)
-            response = policy.generate(query)
-            #response = torch.FloatTensor(response)
-            response = response.to(device)
-            print("RESPONSE (", i, ") = ", response.shape)
-
-            # only eval with torch.no_grad()
-            reward_model.eval()
-            with torch.no_grad():
-                reward = reward_model(query, response).detach()
-            reward = reward.to(device)
-            print("Rewards (", i, ") = ", reward)
-
-            query_tensors = query_tensors + list(torch.split(query,1))
-            print("Die at Q_tensor")
-            response_tensors = response_tensors + list(torch.split(response,1))
-            
-            print("Die at Response_tensor")
-            rewards.append(reward)
-            print("Die at Reward_tensor")
-            
-        except Exception as e1:
-            print(e1)
-            
-            print("\n\nFOR-LOOP 1\n")
-            continue
-
-    for k in range(len(query_tensors)):
-        query_tensors[k] = query_tensors[k].squeeze(0)
-        response_tensors[k] = response_tensors[k].squeeze(0)
-    #print("query_tensors: ", len(query_tensors), query_tensors[0].shape,query_tensors[1].shape )
-    #print("response_tensors: ", len(response_tensors), response_tensors[0].shape,response_tensors[1].shape )
-      
-    query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-    response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-    query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-    response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-    
-    print("Rewards before torch.cat: ", rewards)
-    rewards = torch.cat(rewards).to(device)
-    print("Rewards after torch.cat: ", rewards)
-    
-    query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-    response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-        #print("query_tensors: ", query_tensors.shape)
-        #print("response_tensors: ", response_tensors.shape)
-        #print("rewards: ", rewards.shape)
-    
-    #except Exception as e2:
-    #    print(e2)
-    #    print("\n\nFOR-LOOP 2\n")
-    #    continue
-    #### Run PPO training 
-    stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-     
-    #### Log everything
-    timing['time/epoch'] = time.time()-t0
-    logs.update(timing)
-    logs.update(stats)
-    logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-    logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-    logs['env/reward_dist'] = rewards.cpu().numpy()
-    wandb.log(logs)
-    
-    ## Push model to hub every 6000 epoch
-    if (epoch+1) % 4000 == 0:
-        print("EPOCH: ", epoch)
-        # HF push_to_hub:
-        policy.push_to_hub("QuickRead/PPO_training")
-        tokenizer.push_to_hub("QuickRead/PPO_training")
-=======
 	try:
 		torch.cuda.empty_cache()
 		logs = dict()
@@ -259,7 +167,6 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 		# HF push_to_hub:
 		policy.push_to_hub("QuickRead/PPO-policy_v3")
 		tokenizer.push_to_hub("QuickRead/PPO-policy_v3")
->>>>>>> 428bc2f00cfd6e419459d115223268bdf49b8f65
 
 
 # Save model
