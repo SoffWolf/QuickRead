@@ -107,8 +107,8 @@ keys_file = open("../PPO_training/hfAPI.txt")
 key = keys_file.readlines()[0].rstrip()
 
 ### TO BE UNCOMMENT AFTER DEBUG
-#save_directory = "QuickRead/Reward_training_Pegasus_reddit"
-#model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_reddit', key, "QuickRead")
+save_directory = "QuickRead/Reward_training_Pegasus_reddit"
+model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_reddit', key, "QuickRead")
 
 
 #Collate
@@ -148,7 +148,7 @@ def collate(list_of_samples):
 user = "sophietr"
 group = "quickread"
 project = "text-summary-reward-model"
-display_name = "reward_model_wandb_7e5_bs_1_idx"
+display_name = "reward_model_wandb_dynamic_bs_1_idx"
 wandb.init(entity=group, project=project, name=display_name)
 
 
@@ -248,7 +248,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 2e-7
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
-                
+
         total_acc_val = 0
         total_loss_val = 0
         step = 0
@@ -299,7 +299,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
 
     # Save model
     checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_7e5_bs_1_idx", 'epoch-{}.pth'.format(epoch_num+1)))
+    torch.save(checkpoint, os.path.join("./reward_model_wandb_dynamic_bs_1_idx", 'epoch-{}.pth'.format(epoch_num+1)))
 
     model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
     tokenizer.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
