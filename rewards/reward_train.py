@@ -212,6 +212,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     if use_cuda:
         model = model.cuda()
 
+    # investigate what opt openAI use, or try other opt
     optimizer = Adam(model.parameters(), lr= learning_rate)
 
     # WANDB 
@@ -370,7 +371,9 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     tokenizer.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
     
 
+# test on 2 epochs
 EPOCHS = 1
+# Reduce learning rate gradually
 LR = 1e-6
 BATCH_SIZE = 1
 train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)

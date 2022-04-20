@@ -120,7 +120,10 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
             response = response.to(device)
             print("RESPONSE (", i, ") = ", response.shape)
 
-            reward = reward_model(query, response).detach()
+            # only eval with torch.no_grad()
+            reward_model.eval()
+            with torch.no_grad():
+                reward = reward_model(query, response).detach()
             reward = reward.to(device)
             print("Rewards (", i, ") = ", reward)
 
