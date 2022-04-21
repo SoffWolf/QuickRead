@@ -18,16 +18,17 @@ RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-6
-BATCH_SIZE = 1
-# -------------------------------------------------------------------------------- #
-# if there is a failed train, trace the path to last saved checkpoint and add here #
-# -------------------------------------------------------------------------------- #
-PATH = " " 
+BATCH_SIZE = 1 
 
 # unchanged
 DATAPATH = 'data/human_feedback.parquet'
 KEY_PATH = "../PPO_training/hfAPI.txt"
 CHECKPOINT_PATH = "./" + RUN_NAME
+
+# -------------------------------------------------------------------------------- #
+# if there is a failed train, trace the path to last saved checkpoint and add here #
+# -------------------------------------------------------------------------------- #
+PATH = CHECKPOINT_PATH +  "/lateststep.pth"
 
 ## Set up device
 
@@ -177,6 +178,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                         'optimizer' :optimizer.state_dict()
                         }
                 torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
+                wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
             # Manually update learning rate:
             if step % (100*1000) == 0:
@@ -266,7 +268,9 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     
 
 def test(model, df_test):
-    test_dataloader = torch.utils.data.DataLoader(df_test, collate_fn=collate)
+    test = Dataset(df_test)
+
+    test_dataloader = torch.utils.data.DataLoader(test, collate_fn=collate)
     total_acc_test = 0
     step = 0
     acc_per_100 = 0
@@ -304,7 +308,7 @@ if __name__== "__main__":
     group = "quickread"
     project = "text-summary-reward-model"
     display_name = RUN_NAME
-    wandb.init(entity=group, project=project, name=display_name)
+    wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
@@ -327,13 +331,16 @@ if __name__== "__main__":
     except:
         # load check points 
         print("Resumed training from checkpoint")
-        checkpoint = torch.load(PATH)
+        if wandb.run.resumed:
+        
+            checkpoint = torch.load(PATH)
 
-        model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        step = checkpoint['step']
-        model.to(device)
-        optimizer.to(device)
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            step = checkpoint['step']
+            loss = checkpoint['loss']
+            model.to(device)
+        
         model.train()
 
     finally:
