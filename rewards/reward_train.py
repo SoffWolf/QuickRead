@@ -6,7 +6,6 @@ from reward_model import RewardModel
 from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
 import time
-import ijson
 import pandas as pd
 import numpy as np
 from torch.optim import Adam
@@ -15,51 +14,6 @@ import wandb
 import os
 
 
-# First import the json data into pandas dataframes
-numbers = [i+3 for i in range (18)] + [22]
-data = []
-columns = [
-    "post",
-    "split",
-    "summary1",
-    "summary2",
-    "choice"
-]
-summary1 = ""
-summary2=""
-for num in numbers:
-    filename = "reward_training_data/batch" + str(num) + ".json"
-    with open(filename, 'r') as f:
-        parser = ijson.parse(f, multiple_values=True)
-        chosen_row = []
-        summaries = []
-        for prefix, event, value in parser:
-            if (prefix, event) == ("info.post", "string"):
-                post = value
-                chosen_row.append(post)
-            elif (prefix, event) == ("split", "string"):
-                split = value
-                chosen_row.append(split)
-            elif (prefix, event) == ("summaries.item.text","string"):
-                if len(summaries) == 2:
-                    summaries = []
-                    summary1 = value
-                    summaries.append(summary1)
-                elif len(summaries) < 2:
-                    summary2 = value
-                    summaries.append(summary2)
-            elif (prefix, event) == ("choice", "number"):
-                choice = value
-                if choice == 1:
-                    temp = summary1
-                    summary1 = summary2
-                    summary2 = temp
-                chosen_row.append(summary1)
-                chosen_row.append(summary2)
-                chosen_row.append(choice)
-                data.append(chosen_row)
-                # Reset
-                chosen_row = []
 
 
 df = pd.DataFrame(data, columns=columns)
@@ -339,7 +293,8 @@ BATCH_SIZE = 1
 trained_model = train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
 test(trained_model, df_test)
 
-
+#https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
+#https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
 
 
 
