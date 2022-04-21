@@ -272,12 +272,15 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     
 
 def test(model, df_test):
+    if use_cuda:
+        model = model.cuda()
     test = Dataset(df_test)
 
     test_dataloader = torch.utils.data.DataLoader(test, collate_fn=collate)
     total_acc_test = 0
     step = 0
     acc_per_100 = 0
+
     model.eval()
     with torch.no_grad():
         for post, sum1, sum2 in tqdm(test_dataloader):
