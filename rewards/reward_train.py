@@ -264,7 +264,6 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     model.push_to_hub("QuickRead/" + RUN_NAME)
     tokenizer.push_to_hub("QuickRead/" + RUN_NAME)
     
-    return model
 
 def test(model, df_test):
     test_dataloader = torch.utils.data.DataLoader(df_test, collate_fn=collate)
@@ -315,6 +314,17 @@ if __name__== "__main__":
     optimizer = Adam(model.parameters(), lr= LR)
     # Add logic for checking if thhere are checkpoints:
     try:
+        # make path
+        os.mkdir(RUN_NAME)
+
+        keys_file = open(KEY_PATH)
+        key = keys_file.readlines()[0].rstrip()
+        save_directory = "QuickRead/" + RUN_NAME
+        model.save(save_directory, True, key, "QuickRead")
+
+        train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
+
+    except:
         # load check points 
         print("Resumed training from checkpoint")
         checkpoint = torch.load(PATH)
@@ -326,19 +336,8 @@ if __name__== "__main__":
         optimizer.to(device)
         model.train()
 
-    except:
-        # make path
-        os.mkdir(RUN_NAME)
-
-        keys_file = open(KEY_PATH)
-        key = keys_file.readlines()[0].rstrip()
-        save_directory = "QuickRead/" + RUN_NAME
-        model.save(save_directory, True, key, "QuickRead")
-
-        trained_model = train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
-
     finally:
-        test(trained_model, df_test)
+        test(model, df_test)
 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
