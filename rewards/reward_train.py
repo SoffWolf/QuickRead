@@ -175,7 +175,11 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 checkpoint = {
                         'step': step,
                         'state_dict': model.state_dict(),
-                        'optimizer' :optimizer.state_dict()
+                        'optimizer' :optimizer.state_dict(),
+                        "batch-loss": batch_loss,
+                        "total-batch-loss": total_loss_train,
+                        "total-batch-acc": total_acc_train,
+                        "batch-total_acc_train-per-100-step": acc_per_100
                         }
                 torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
                 wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
@@ -332,13 +336,16 @@ if __name__== "__main__":
         # load check points 
         print("Resumed training from checkpoint")
         if wandb.run.resumed:
-        
             checkpoint = torch.load(PATH)
 
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             step = checkpoint['step']
-            loss = checkpoint['loss']
+            batch_loss = checkpoint['batch-loss']
+            total_loss_train = checkpoint['total-batch-loss']
+            total_acc_train = checkpoint['total-batch-acc']
+            acc_per_100 = checkpoint['batch-total_acc_train-per-100-step']
+            
             model.to(device)
         
         model.train()
