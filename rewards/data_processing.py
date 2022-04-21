@@ -8,8 +8,6 @@ def data_preprocess(filepath):
     Param: 
         filepath: string: Path to the original data file
     '''
-    assert filepath != "reward_training_data/batch", "Something is wrong with file path"
-
     # First import the json data into pandas dataframes
     numbers = [i+3 for i in range (18)] + [22]
     data = []
@@ -63,6 +61,6 @@ if __name__== "__main__":
     filepath = "reward_training_data/batch"
     data_preprocess(filepath)
     
-    df = pd.read_parquet('/data/human_feedback.parquet', engine="pyarrow")
+    df = pd.read_parquet('data/human_feedback.parquet', engine="pyarrow")
     print(df.dtypes)
     print(df)

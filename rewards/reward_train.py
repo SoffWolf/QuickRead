@@ -1,29 +1,47 @@
+import os
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+import wandb
 import torch
 import torch.nn as nn
 import torch.functional as F
 from torch.nn.utils.rnn import pad_sequence
-from reward_model import RewardModel
-from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
 from torch.utils.data.dataset import random_split
-import time
-import pandas as pd
-import numpy as np
 from torch.optim import Adam
-from tqdm import tqdm
-import wandb
-import os
+from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoModelForSeq2SeqLM
+from reward_model import RewardModel
 
+## Global variables
+# TODO: how to make this a param for runnig code??? 
+RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
+SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
+EPOCHS = 1
+LR = 1e-6
+BATCH_SIZE = 1
+# -------------------------------------------------------------------------------- #
+# if there is a failed train, trace the path to last saved checkpoint and add here #
+# -------------------------------------------------------------------------------- #
+PATH = " " 
 
+# unchanged
+DATAPATH = 'data/human_feedback.parquet'
+KEY_PATH = "../PPO_training/hfAPI.txt"
+CHECKPOINT_PATH = "./" + RUN_NAME
 
+## Set up device
 
-df = pd.DataFrame(data, columns=columns)
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda" if use_cuda else "cpu")
+
+### DATA & DATALOADER related
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
         self.post = [tokenizer(post, return_tensors="pt")['input_ids'] for post in df['post']]
         self.split = [split for split in df['split']]
         self.summary1 = [tokenizer(summary1, return_tensors="pt")['input_ids'] for summary1 in df['summary1']]
-        self.summary2 = [tokenizer(summary2, return_tensors="pt")['input_ids'] for summary2 in df['summary2']]# padding='max_length',
+        self.summary2 = [tokenizer(summary2, return_tensors="pt")['input_ids'] for summary2 in df['summary2']]
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
@@ -49,21 +67,6 @@ class Dataset(torch.utils.data.Dataset):
         batch_sum1 = self.get_batch_sum1(idx)
         batch_sum2 = self.get_batch_sum2(idx)
         return batch_post, batch_sum1, batch_sum2
-
-np.random.seed(112)
-df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
-
-tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05")
-supervised_baseline = PegasusModel.from_pretrained("QuickRead/pegasus-reddit-7e05") # Tobechange
-
-model = RewardModel(supervised_baseline)
-keys_file = open("../PPO_training/hfAPI.txt")
-key = keys_file.readlines()[0].rstrip()
-
-### TO BE UNCOMMENT AFTER DEBUG
-save_directory = "QuickRead/Reward_training_Pegasus_reddit"
-model.save(save_directory, True, 'https://huggingface.co/QuickRead/Reward_training_Pegasus_reddit', key, "QuickRead")
-
 
 #Collate
 def collate(list_of_samples):
@@ -94,47 +97,32 @@ def collate(list_of_samples):
     post_mask = torch.BoolTensor(post_mask)                 # tranform to right dtype: torch.bool
     return posts, sum1s, sum2s
 
+# Purpose: Prevent duplicated training data tensor (Source: https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/)
+def worker_init_fn(worker_id):                                                          
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
 
-# WANDB 
-# import wandb
-
-# WANDB 
-user = "sophietr"
-group = "quickread"
-project = "text-summary-reward-model"
-display_name = "reward_model_wandb_dynamic_bs_1_idx"
-wandb.init(entity=group, project=project, name=display_name)
-
-
-# training loop
+## TRAINING LOOP
 def train(model, train_data, val_data, learning_rate, epochs, bs):
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
 
     def criterion(x):
-        # For tracking purposes: --> DELETE later
-        #print("\n x =", x)
         s = nn.Sigmoid()
         sigmoid_r = s(x)
-        #print("\n Sigmoid = ", sigmoid_r)
 
         # Criterion
         ret = torch.log(sigmoid_r)
         m = nn.LogSigmoid()
         ret = m(x) * - 1
         ret = torch.mean(ret)
-        #print("\n ret from criterion = ", ret)
         return ret
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=bs, collate_fn=collate, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=bs, collate_fn=collate, shuffle=True, num_workers=4, worker_init_fn=worker_init_fn)
     val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=bs)
 
     if use_cuda:
         model = model.cuda()
 
-    optimizer = Adam(model.parameters(), lr= learning_rate)
 
     # WANDB 
     wandb.watch(model, log="all")
@@ -143,17 +131,20 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
         total_loss_train = 0
         acc_per_100 = 0
         step = 0
-        model.train()
+        model.train(True)
         for post, sum1, sum2 in tqdm(train_dataloader):
             # Input
             post_id = post.to(device)
             sum1_id = sum1.to(device)
             sum2_id = sum2.to(device)
             
+            # Zero gradients:
+            optimizer.zero_grad()
+
             # Output rewards
             predicted_reward_1 = model(post_id, sum1_id)
             predicted_reward_2 = model(post_id, sum2_id)
-            optimizer.zero_grad()
+            
 
             # Loss and accuracy
             batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
@@ -166,7 +157,6 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
             acc_per_100 += acc
 
             # Backward
-            # model.zero_grad()
             batch_loss.backward()
             optimizer.step()
 
@@ -178,7 +168,17 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                             "train/total-batch-acc": total_acc_train,
                             "train/batch-total_acc_train-per-100-step": acc_per_100})
                 acc_per_100 = 0
+            
+            # Save checkpoint on every 10000 steps:
+            if step % 10000 == 0:
+                checkpoint = {
+                        'step': step,
+                        'state_dict': model.state_dict(),
+                        'optimizer' :optimizer.state_dict()
+                        }
+                torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
+            # Manually update learning rate:
             if step % (100*1000) == 0:
                 print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
@@ -207,7 +207,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
         total_loss_val = 0
         step = 0
         acc_per_100 = 0
-        model.eval()
+        model.train(False)
         with torch.no_grad():
 
             for post, sum1, sum2 in tqdm(val_dataloader):
@@ -251,12 +251,18 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                    "val/Epoch-val-loss": total_loss_val / len(val_data),
                    "val/Val-acc": total_acc_val / len(val_data) })
 
-    # Save model
-    checkpoint = {'state_dict': model.state_dict(),'optimizer' :optimizer.state_dict()}
-    torch.save(checkpoint, os.path.join("./reward_model_wandb_dynamic_bs_1_idx", 'epoch-{}.pth'.format(epoch_num+1)))
+        # Save model at the end of an epoch
+        checkpoint = {
+                    'epoch': epoch_num+1,
+                    'state_dict': model.state_dict(),
+                    'optimizer' :optimizer.state_dict(),
+                    'train_loss' : total_loss_train / len(train_data),
+                    'val_loss' : total_loss_val / len(val_data)
+                    }
+        torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'epoch-{}.pth'.format(epoch_num+1)))
 
-    model.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
-    tokenizer.push_to_hub("QuickRead/Reward_training_Pegasus_reddit")
+    model.push_to_hub("QuickRead/" + RUN_NAME)
+    tokenizer.push_to_hub("QuickRead/" + RUN_NAME)
     
     return model
 
@@ -287,11 +293,52 @@ def test(model, df_test):
     print(
             f'Test accuracy: {total_acc_test / len(df_test): .3f}\n')
 
-EPOCHS = 1
-LR = 1e-6
-BATCH_SIZE = 1
-trained_model = train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
-test(trained_model, df_test)
+if __name__== "__main__":
+
+    ### Read df from file & split.
+    df = pd.read_parquet(DATAPATH, engine="pyarrow")
+    # TODO: to save more memory, it is possible to split train, val, test beforehand and save to file. 
+    np.random.seed(112)
+    df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
+
+    ## WANDB INIT
+    group = "quickread"
+    project = "text-summary-reward-model"
+    display_name = RUN_NAME
+    wandb.init(entity=group, project=project, name=display_name)
+
+    ### Load model
+    tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
+    supervised_baseline = PegasusModel.from_pretrained(SUPERVISED_MODEL)
+
+    model = RewardModel(supervised_baseline)
+    optimizer = Adam(model.parameters(), lr= LR)
+    # Add logic for checking if thhere are checkpoints:
+    try:
+        # load check points 
+        print("Resumed training from checkpoint")
+        checkpoint = torch.load(PATH)
+
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        step = checkpoint['step']
+        model.to(device)
+        optimizer.to(device)
+        model.train()
+
+    except:
+        # make path
+        os.mkdir(RUN_NAME)
+
+        keys_file = open(KEY_PATH)
+        key = keys_file.readlines()[0].rstrip()
+        save_directory = "QuickRead/" + RUN_NAME
+        model.save(save_directory, True, key, "QuickRead")
+
+        trained_model = train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
+
+    finally:
+        test(trained_model, df_test)
 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
