@@ -13,7 +13,7 @@ from transformers import PegasusTokenizer, PegasusModel #AutoTokenizer, AutoMode
 from reward_model import RewardModel
 
 ## Global variables
-# TODO: how to make this a param for runnig code??? 
+# TODO: how to make this a param for runnig code??
 RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
@@ -124,11 +124,6 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     if use_cuda:
         model = model.cuda()
 
-<<<<<<< HEAD
-    # investigate what opt openAI use, or try other opt
-    optimizer = Adam(model.parameters(), lr= learning_rate)
-=======
->>>>>>> f3602fe4d3d28b531ed3dcd5f1d042aaa5a4d89b
 
     # WANDB 
     wandb.watch(model, log="all")
@@ -276,14 +271,6 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
     tokenizer.push_to_hub("QuickRead/" + RUN_NAME)
     
 
-<<<<<<< HEAD
-# test on 2 epochs
-EPOCHS = 1
-# Reduce learning rate gradually
-LR = 1e-6
-BATCH_SIZE = 1
-train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
-=======
 def test(model, df_test):
     if use_cuda:
         model = model.cuda()
@@ -365,7 +352,6 @@ if __name__== "__main__":
             model.to(device)
         
         model.train()
->>>>>>> f3602fe4d3d28b531ed3dcd5f1d042aaa5a4d89b
 
     finally:
         test(model, df_test)
