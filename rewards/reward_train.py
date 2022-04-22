@@ -118,7 +118,7 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints={}):
     train, val = Dataset(train_data), Dataset(val_data)
 
     train_dataloader = torch.utils.data.DataLoader(train, batch_size=BATCH_SIZE, collate_fn=collate, shuffle=True, num_workers=4, worker_init_fn=worker_init_fn)
-    val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=bs)
+    val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=BATCH_SIZE)
 
     if use_cuda:
         model = model.cuda()
