@@ -17,7 +17,7 @@ from reward_model import RewardModel
 RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
-LR = 1e-6
+LR = 1e-5
 BATCH_SIZE = 1 
 
 # unchanged
@@ -190,28 +190,28 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
             # Manually update learning rate:
-            if step % (100*1000) == 0:
+            if step % (100*700) == 0:
                 print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 9e-7
+                optimizer.param_groups[0]['lr'] = 6e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1200) == 0:
+            if step % (100*1000) == 0:
                 print("Step where the learning rate is changed from 9e-7 to 7e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 7e-7
+                optimizer.param_groups[0]['lr'] = 5e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1400) == 0:
+            if step % (100*1300) == 0:
                 print("Step where the learning rate is changed from 7e-7 to 5e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 5e-7
+                optimizer.param_groups[0]['lr'] = 3e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
             if step % (100*1500) == 0:
                 print("Step where the learning rate is changed from 5e-7 to 2e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 2e-7
+                optimizer.param_groups[0]['lr'] = 1e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
 
         total_acc_val = 0
