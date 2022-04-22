@@ -331,7 +331,7 @@ if __name__== "__main__":
         keys_file = open(KEY_PATH)
         key = keys_file.readlines()[0].rstrip()
         save_directory = "QuickRead/" + RUN_NAME
-        model.save(save_directory, True, key, "QuickRead")
+        #model.save(save_directory, True, key, "QuickRead")
 
         train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
 
