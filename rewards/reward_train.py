@@ -14,12 +14,11 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
+RUN_NAME = "reward_model_wandb_dyn_bs_1_idx"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
-BATCH_SIZE = 1 
-
+BATCH_SIZE = 1
 # unchanged
 DATAPATH = 'data/human_feedback.parquet'
 KEY_PATH = "../PPO_training/hfAPI.txt"
@@ -103,7 +102,7 @@ def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 ## TRAINING LOOP
-def train(model, train_data, val_data, learning_rate, epochs, bs):
+def train(model, train_data, val_data, optimizer, resume=False, checkpoints={}):
 
     def criterion(x):
         s = nn.Sigmoid()
@@ -118,7 +117,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=bs, collate_fn=collate, shuffle=True, num_workers=4, worker_init_fn=worker_init_fn)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=BATCH_SIZE, collate_fn=collate, shuffle=True, num_workers=4, worker_init_fn=worker_init_fn)
     val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=bs)
 
     if use_cuda:
@@ -127,11 +126,17 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
 
     # WANDB 
     wandb.watch(model, log="all")
-    for epoch_num in range(epochs):
+    for epoch_num in range(EPOCHS):
         total_acc_train = 0
         total_loss_train = 0
         acc_per_100 = 0
         step = 0
+        if resume:
+            step = checkpoints['step']
+            batch_loss = checkpoints['batch-loss']
+            total_loss_train = checkpoints['total-batch-loss']
+            total_acc_train = checkpoints['total-batch-acc']
+            acc_per_100 = checkpoints['batch-total_acc_train-per-100-step']
         model.train(True)
         for post, sum1, sum2 in tqdm(train_dataloader):
             # Input
@@ -162,7 +167,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
             optimizer.step()
 
             if step % 100 == 0:
-                acc_per_100 = acc_per_100/(bs * 100)
+                acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
                 # Logging
                 wandb.log({ "train/batch-loss": batch_loss,
                             "train/total-batch-loss": total_loss_train,
@@ -203,7 +208,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 optimizer.param_groups[0]['lr'] = 3e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1500) == 0:
+            if step % (100*1400) == 0:
                 print("Step where the learning rate is changed from 5e-7 to 2e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 1e-6
@@ -236,7 +241,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 total_acc_val += acc
                 acc_per_100 += acc
                 if step % 100 == 0:
-                    acc_per_100 = acc_per_100/(bs * 100)
+                    acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
                     
                     # Logging
                     wandb.log({ "val/batch-loss": batch_loss,
@@ -327,13 +332,10 @@ if __name__== "__main__":
     try:
         # make path
         os.mkdir(RUN_NAME)
-
-        keys_file = open(KEY_PATH)
-        key = keys_file.readlines()[0].rstrip()
         save_directory = "QuickRead/" + RUN_NAME
         #model.save(save_directory, True, key, "QuickRead")
 
-        train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
+        train(model, df_train, df_val, optimizer)
 
     except:
         # load check points 
@@ -343,15 +345,11 @@ if __name__== "__main__":
 
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
-            step = checkpoint['step']
-            batch_loss = checkpoint['batch-loss']
-            total_loss_train = checkpoint['total-batch-loss']
-            total_acc_train = checkpoint['total-batch-acc']
-            acc_per_100 = checkpoint['batch-total_acc_train-per-100-step']
-            
+
+            train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
             model.to(device)
         
-        model.train()
+        # model.train()
 
     finally:
         test(model, df_test)

@@ -75,8 +75,8 @@ class RewardModel(nn.Module):
    
         return reward
 
-    def save(self, save_dir, push, key, org):
-        self.supervised_baseline.save_pretrained(save_directory=save_dir, push_to_hub=push, use_auth_token=key, organization=org)
+    def save(self, save_dir, push, org):
+        self.supervised_baseline.save_pretrained(save_directory=save_dir, push_to_hub=push, organization=org)
 
     def push_to_hub(self, repo):
         self.supervised_baseline.push_to_hub(repo)
