@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "reward_model_wandb_dyn_bs_1_idx"
+RUN_NAME = "RM_incr_lr"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -132,6 +132,8 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints={}):
         acc_per_100 = 0
         step = 0
         if resume:
+            if wandb.run.resumed:
+                print("Resumed result from WandB")
             step = checkpoints['step']
             batch_loss = checkpoints['batch-loss']
             total_loss_train = checkpoints['total-batch-loss']
@@ -340,14 +342,14 @@ if __name__== "__main__":
     except:
         # load check points 
         print("Resumed training from checkpoint")
-        if wandb.run.resumed:
-            checkpoint = torch.load(PATH)
+        
+        checkpoint = torch.load(PATH)
 
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
 
-            train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
-            model.to(device)
+        train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
+        # model.to(device)
         
         # model.train()
 
