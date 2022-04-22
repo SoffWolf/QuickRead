@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "reward_model_wandb_dynamic_bs_1_idx"
+RUN_NAME = "reward_model_wandb_dyn_bs_1_idx"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -203,7 +203,7 @@ def train(model, train_data, val_data, learning_rate, epochs, bs):
                 optimizer.param_groups[0]['lr'] = 3e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1500) == 0:
+            if step % (100*1400) == 0:
                 print("Step where the learning rate is changed from 5e-7 to 2e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 1e-6

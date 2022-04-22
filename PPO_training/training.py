@@ -61,14 +61,14 @@ policy_ref = PegasusWithValueHead(supervised_baseline)
 #policy = supervised_baseline
 #policy_ref = supervised_baseline
 
-keys_file = open("hfAPI.txt")
-key = keys_file.readlines()[0].rstrip()
+#keys_file = open("hfAPI.txt")
+#key = keys_file.readlines()[0].rstrip()
 #print(key)
 
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 
 save_directory = "ppo-peg-7e05-rm-1epoch_v3"
-policy.save(save_directory, True, 'https://huggingface.co/QuickRead/PPO-policy_v3', key, "QuickRead")
+policy.save(save_directory, True, 'https://huggingface.co/QuickRead/PPO-policy_v3', "QuickRead")
 # Wandb
 wandb.watch(policy, log='all')
 
@@ -93,7 +93,8 @@ ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 n_except = 0
-for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
+for epoch in tqdm(range(int(np.ceil(len(train_texts[:64]) / config["batch_size"])))):
+#for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 	try:
 		torch.cuda.empty_cache()
 		logs = dict()
