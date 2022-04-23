@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_incr_lr"
+RUN_NAME = "RM_incr_lr_v1"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -156,13 +156,13 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints={}):
 
             # Loss and accuracy
             batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
-            total_loss_train += batch_loss
-            step += 1
+            total_loss_train = total_loss_train + batch_loss
+            step = step + 1
             
             # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
             acc = (predicted_reward_1 > predicted_reward_2).sum().item()
-            total_acc_train += acc
-            acc_per_100 += acc
+            total_acc_train = total_acc_train + acc
+            acc_per_100 = acc_per_100 + acc
 
             # Backward
             batch_loss.backward()
@@ -330,16 +330,19 @@ if __name__== "__main__":
 
     model = RewardModel(supervised_baseline)
     optimizer = Adam(model.parameters(), lr= LR)
-    # Add logic for checking if thhere are checkpoints:
-    try:
-        # make path
-        os.mkdir(RUN_NAME)
-        save_directory = "QuickRead/" + RUN_NAME
+    # Add logic for checking if there are checkpoints:
+    if not os.path.exists(PATH):
+        print('The path to latest checkpoint NOT exist')
+        if not os.path.exists('/'+RUN_NAME ):
+            print('CREATE a folder to checkpoints')
+            # make path
+            os.mkdir(RUN_NAME)
+        #save_directory = "QuickRead/" + RUN_NAME
         #model.save(save_directory, True, key, "QuickRead")
 
         train(model, df_train, df_val, optimizer)
 
-    except:
+    else:
         # load check points 
         print("Resumed training from checkpoint")
         
@@ -353,8 +356,7 @@ if __name__== "__main__":
         
         # model.train()
 
-    finally:
-        test(model, df_test)
+    test(model, df_test)
 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
