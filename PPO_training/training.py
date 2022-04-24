@@ -42,8 +42,8 @@ config = {
 RUN_NAME = "PP0_rm_v1"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RUN_NAME +  "/epoch-1.pth"
-# PATH = "/" + RUN_NAME +  "/lateststep.pth"
-
+PATH = "./" + RUN_NAME
+CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
@@ -86,6 +86,20 @@ df = pd.DataFrame(train_texts)
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
+
+if not os.path.exists(PATH):
+    print('The path to latest checkpoint NOT exist')
+    os.mkdir(RUN_NAME)
+else:
+    # load check points 
+    print("Resumed training from last saved epoch")
+    
+    checkpoint = torch.load(CHECKPOINT_PATH, map_location=device)
+
+    policy.load_state_dict(checkpoint['state_dict'])
+    policy.to(device)
+    ## Now the epoch is still gonna be retrained
+
 n_except = 0
 for epoch in tqdm(range(int(np.ceil(len(train_texts[:128]) / config["batch_size"])))):
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
@@ -125,7 +139,7 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts[:128]) / config["batch_size"
 	    
 			except Exception as e1:
 				print(e1)
-				n_except += 1
+				n_except =  n_except + 1
 				print("Number of EXCEPTS =", n_except)
 		for k in range(len(query_tensors)):
 			query_tensors[k] = query_tensors[k].squeeze(0)
@@ -157,19 +171,21 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts[:128]) / config["batch_size"
 	wandb.log(logs)
 
 	## Push model to hub every 6000 epoch
-	if (epoch+1) % 1000 == 0:
+	if (epoch+1) % 2000 == 0:
 		print("EPOCH: ", epoch)
 		# HF push_to_hub:
-		policy.push_to_hub("QuickRead/PPO-policy_v3")
-		tokenizer.push_to_hub("QuickRead/PPO-policy_v3")
-
-
-# Save model
+		policy.push_to_hub("QuickRead/"+RUN_NAME)
+		tokenizer.push_to_hub("QuickRead/"+RUN_NAME)
+        # Save checkpoint (TOBE DONE)
+        checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+        torch.save( checkpoint, CHECKPOINT_PATH )
+        wandb.save(CHECKPOINT_PATH)
+        
 # HF push_to_hub:
-policy.push_to_hub("QuickRead/PPO-policy_v3")
-tokenizer.push_to_hub("QuickRead/PPO-policy_v3")
+policy.push_to_hub("QuickRead/"+RUN_NAME)
+tokenizer.push_to_hub("QuickRead/"+RUN_NAME)
 
 print("N_EXCEPTIONS = ", n_except)
 checkpoint = {'state_dict': policy.state_dict()}
 #torch.save(checkpoint, os.path.join("./result/test.pth"))
-torch.save(checkpoint, os.path.join("./ppo-peg-7e05-rm-1epoch_v3", 'epoch-{}.pth'.format(epoch+1)))
+torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
