@@ -102,7 +102,7 @@ def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 ## TRAINING LOOP
-def train(model, train_data, val_data, optimizer, resume=False, checkpoints={}):
+def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None):
 
     def criterion(x):
         s = nn.Sigmoid()
@@ -346,13 +346,12 @@ if __name__== "__main__":
         # load check points 
         print("Resumed training from checkpoint")
         
-        checkpoint = torch.load(PATH)
+        checkpoint = torch.load(PATH, map_location=device)
 
         model.load_state_dict(checkpoint['state_dict'])
+        model.to(device)
         optimizer.load_state_dict(checkpoint['optimizer'])
-
         train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
-        # model.to(device)
         
         # model.train()
 
