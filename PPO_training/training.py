@@ -40,8 +40,8 @@ config = {
     "vf_coef":.1, 
 }
 RUN_NAME = "PP0_rm_v1"
-RM_name = "RM_incr_lr_v1"
-RM_PATH = "../rewards/" + RUN_NAME +  "/epoch-1.pth"
+RM_NAME = "RM_incr_lr_v1"
+RM_PATH = "../rewards/" + RM_NAME +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
 ## WANDB 
