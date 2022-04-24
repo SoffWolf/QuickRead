@@ -21,7 +21,7 @@ from rewards.reward_model import RewardModel
 config = {
     "lm_name": "QuickRead/pegasus-reddit-7e05",   # policy: supervised baseline
     "ref_lm_name": "QuickRead/pegasus-reddit-7e05",   # find out about the ref model
-    "cls_model_name": "SophieTr/Reward_training_Pegasus_reddit",   # reward model
+    "cls_model_name": "SophieTr/RM_incr_lr_v1",   # reward model
     "tk_name": "QuickRead/pegasus-reddit-7e05",    # tokenizer name
     "steps": 25600,
     "batch_size": 8,

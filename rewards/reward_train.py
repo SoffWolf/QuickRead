@@ -192,13 +192,13 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
                 wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
             # Manually update learning rate:
-            if step % (100*700) == 0:
+            if step % (100*1000) == 0:
                 print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 6e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1000) == 0:
+            if step % (100*1200) == 0:
                 print("Step where the learning rate is changed from 9e-7 to 7e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 5e-6
