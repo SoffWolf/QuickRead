@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_incr_lr_v1"
+RUN_NAME = "RM_incr_lr_v2"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -192,13 +192,13 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
                 wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
             # Manually update learning rate:
-            if step % (100*1000) == 0:
+            if step % (100*700) == 0:
                 print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 6e-6
                 print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
             
-            if step % (100*1200) == 0:
+            if step % (100*1000) == 0:
                 print("Step where the learning rate is changed from 9e-7 to 7e-7: ", step)
                 print("Previous LR = ", optimizer.param_groups[0]['lr'])
                 optimizer.param_groups[0]['lr'] = 5e-6
@@ -322,7 +322,7 @@ if __name__== "__main__":
     group = "quickread"
     project = "text-summary-reward-model"
     display_name = RUN_NAME
-    wandb.init(entity=group, project=project, name=display_name, resume=True)
+    # wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
@@ -330,6 +330,7 @@ if __name__== "__main__":
 
     model = RewardModel(supervised_baseline)
     optimizer = Adam(model.parameters(), lr= LR)
+
     # Add logic for checking if there are checkpoints:
     if not os.path.exists(PATH):
         print('The path to latest checkpoint NOT exist')
@@ -339,7 +340,7 @@ if __name__== "__main__":
             os.mkdir(RUN_NAME)
         #save_directory = "QuickRead/" + RUN_NAME
         #model.save(save_directory, True, key, "QuickRead")
-
+        wandb.init(entity=group, project=project, name=display_name)
         train(model, df_train, df_val, optimizer)
 
     else:
@@ -351,6 +352,7 @@ if __name__== "__main__":
         model.load_state_dict(checkpoint['state_dict'])
         model.to(device)
         optimizer.load_state_dict(checkpoint['optimizer'])
+        wandb.init(entity=group, project=project, name=display_name, resume=True)
         train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
         
         # model.train()

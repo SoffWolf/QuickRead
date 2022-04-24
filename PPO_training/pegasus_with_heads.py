@@ -66,8 +66,8 @@ class PegasusWithValueHead(nn.Module):
         output_token = self.model.generate(input_ids = input_ids)
         return output_token
 
-    def save(self, save_dir, push, repo, org):
-        self.model.save_pretrained(save_directory=save_dir, push_to_hub=push, repo_url=repo, organization=org)
+    def save(self, save_dir, push, org):
+        self.model.save_pretrained(save_directory=save_dir, push_to_hub=push, organization=org)
     def push_to_hub(self, repo):
         self.model.push_to_hub(repo)
 

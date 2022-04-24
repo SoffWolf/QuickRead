@@ -39,36 +39,31 @@ config = {
     "cliprange_value":.2,
     "vf_coef":.1, 
 }
+RUN_NAME = "PP0_rm_v1"
+RM_name = "RM_incr_lr_v1"
+RM_PATH = "../rewards/" + RUN_NAME +  "/epoch-1.pth"
+# PATH = "/" + RUN_NAME +  "/lateststep.pth"
 
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
-display_name = "ppo-peg-7e05-rm-1epoch-v3"
+display_name = RUN_NAME
 wandb.init(entity=group, project=project, name=display_name, config=config)
-
-
 
 # load supervised baseline
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 
 # Reward model
 reward_model = RewardModel(supervised_baseline)
-reward_model.load_state_dict(torch.load(os.path.join("../rewards/reward_model_wandb_7e5_bs_1_idx/epoch-1.pth")), strict=False)
+reward_model.load_state_dict(torch.load(os.path.join(RM_PATH)), strict=False)
 
 # Policy model
 policy = PegasusWithValueHead(supervised_baseline)
 policy_ref = PegasusWithValueHead(supervised_baseline)
-#policy = supervised_baseline
-#policy_ref = supervised_baseline
-
-#keys_file = open("hfAPI.txt")
-#key = keys_file.readlines()[0].rstrip()
-#print(key)
-
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 
-save_directory = "ppo-peg-7e05-rm-1epoch_v3"
-policy.save(save_directory, True, 'https://huggingface.co/QuickRead/PPO-policy_v3', "QuickRead")
+save_directory = RUN_NAME
+policy.save(save_directory, True, "QuickRead")
 # Wandb
 wandb.watch(policy, log='all')
 
@@ -86,14 +81,13 @@ val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 df = pd.DataFrame(train_texts)
-#print("DF: ",(df))
  
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
 #train_texts, val_texts, test_texts = train_texts.to(device), val_texts.to(device), test_texts.to(device)
 n_except = 0
-for epoch in tqdm(range(int(np.ceil(len(train_texts[:64]) / config["batch_size"])))):
+for epoch in tqdm(range(int(np.ceil(len(train_texts[:128]) / config["batch_size"])))):
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 	try:
 		torch.cuda.empty_cache()
@@ -179,4 +173,3 @@ print("N_EXCEPTIONS = ", n_except)
 checkpoint = {'state_dict': policy.state_dict()}
 #torch.save(checkpoint, os.path.join("./result/test.pth"))
 torch.save(checkpoint, os.path.join("./ppo-peg-7e05-rm-1epoch_v3", 'epoch-{}.pth'.format(epoch+1)))
-   
