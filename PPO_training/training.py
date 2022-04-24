@@ -39,7 +39,7 @@ config = {
     "cliprange_value":.2,
     "vf_coef":.1, 
 }
-RUN_NAME = "PP0_rm_v1"
+RUN_NAME = "PP0_rm_v1_full"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -101,7 +101,7 @@ else:
     ## Now the epoch is still gonna be retrained
 
 n_except = 0
-for epoch in tqdm(range(int(np.ceil(len(train_texts[:128]) / config["batch_size"])))):
+for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
     try:
         torch.cuda.empty_cache()
