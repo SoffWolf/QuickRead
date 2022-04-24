@@ -117,7 +117,7 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
 
     train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=BATCH_SIZE, collate_fn=collate, shuffle=True, num_workers=4, worker_init_fn=worker_init_fn)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=BATCH_SIZE, collate_fn=collate, shuffle=True, num_workers=1, worker_init_fn=worker_init_fn)
     val_dataloader = torch.utils.data.DataLoader(val, collate_fn=collate, batch_size=BATCH_SIZE)
 
     if use_cuda:
@@ -322,7 +322,7 @@ if __name__== "__main__":
     group = "quickread"
     project = "text-summary-reward-model"
     display_name = RUN_NAME
-    # wandb.init(entity=group, project=project, name=display_name, resume=True)
+    wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
@@ -340,7 +340,7 @@ if __name__== "__main__":
             os.mkdir(RUN_NAME)
         #save_directory = "QuickRead/" + RUN_NAME
         #model.save(save_directory, True, key, "QuickRead")
-        wandb.init(entity=group, project=project, name=display_name)
+        # wandb.init(entity=group, project=project, name=display_name)
         train(model, df_train, df_val, optimizer)
 
     else:
@@ -352,7 +352,7 @@ if __name__== "__main__":
         model.load_state_dict(checkpoint['state_dict'])
         model.to(device)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        wandb.init(entity=group, project=project, name=display_name, resume=True)
+        # wandb.init(entity=group, project=project, name=display_name, resume=True)
         train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
         
         # model.train()

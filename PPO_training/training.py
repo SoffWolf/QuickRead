@@ -40,8 +40,8 @@ config = {
     "vf_coef":.1, 
 }
 RUN_NAME = "PP0_rm_v1"
-RM_NAME = "RM_incr_lr_v1"
-RM_PATH = "../rewards/" + RM_NAME +  "/epoch-1.pth"
+RM_name = "RM_incr_lr_v1"
+RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
 ## WANDB 
@@ -62,8 +62,8 @@ policy = PegasusWithValueHead(supervised_baseline)
 policy_ref = PegasusWithValueHead(supervised_baseline)
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 
-save_directory = RUN_NAME
-policy.save(save_directory, True, "QuickRead")
+# save_directory = RUN_NAME
+# policy.save(save_directory, True, "QuickRead")
 # Wandb
 wandb.watch(policy, log='all')
 
