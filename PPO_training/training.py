@@ -157,31 +157,31 @@ for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 
         #### Run PPO training 
         stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+
+        #### Log everything
+        timing['time/epoch'] = time.time()-t0
+        logs.update(timing)
+        logs.update(stats)
+        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+        logs['env/reward_dist'] = rewards.cpu().numpy()
+        wandb.log(logs)
+        if (epoch+1) % 2000 == 0:
+            print("EPOCH: ", epoch)
+            # HF push_to_hub:
+            policy.push_to_hub("SophieTr/"+RUN_NAME)
+            tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+            # Save checkpoint (TOBE DONE)
+            checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+            torch.save( checkpoint, CHECKPOINT_PATH )
+            wandb.save(CHECKPOINT_PATH)
     except Exception as e:
         print("EROR IN BIG LOOP: ", e)
         pass
-
-    #### Log everything
-    timing['time/epoch'] = time.time()-t0
-    logs.update(timing)
-    logs.update(stats)
-    logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-    logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-    logs['env/reward_dist'] = rewards.cpu().numpy()
-    wandb.log(logs)
-    if (epoch+1) % 2000 == 0:
-        print("EPOCH: ", epoch)
-        # HF push_to_hub:
-        policy.push_to_hub("QuickRead/"+RUN_NAME)
-        tokenizer.push_to_hub("QuickRead/"+RUN_NAME)
-        # Save checkpoint (TOBE DONE)
-        checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
-        torch.save( checkpoint, CHECKPOINT_PATH )
-        wandb.save(CHECKPOINT_PATH)
         
 # HF push_to_hub:
-policy.push_to_hub("QuickRead/"+RUN_NAME)
-tokenizer.push_to_hub("QuickRead/"+RUN_NAME)
+policy.push_to_hub("SophieTr/"+RUN_NAME)
+tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
 
 print("N_EXCEPTIONS = ", n_except)
 checkpoint = {'state_dict': policy.state_dict()}
