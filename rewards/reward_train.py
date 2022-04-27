@@ -45,7 +45,7 @@ class Dataset(torch.utils.data.Dataset):
         self.labels = [label for label in df['choice']]
     def classes(self):
         return self.labels
-    def __len__(self):
+    def __len__(self): 
         return len(self.labels)
     def get_batch_labels(self, idx):
         # Fetch a batch of labels
