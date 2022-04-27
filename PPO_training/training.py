@@ -68,7 +68,9 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
+
 _ = supervised_baseline.to(device)
 _ = reward_model.to(device)
 _ = policy.to(device)
