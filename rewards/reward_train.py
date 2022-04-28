@@ -49,7 +49,8 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.labels)
     def get_batch_labels(self, idx):
         # Fetch a batch of labels
-        return np.array(int(self.labels[idx]))
+        # return np.array(int(self.labels[idx]))
+        return torch.tensor(int(self.labels[idx]))
     def get_batch_posts(self, idx):
         # Fetch a batch of inputs
         return self.post[idx]
@@ -315,7 +316,7 @@ if __name__== "__main__":
     ### Read df from file & split.
     df = pd.read_parquet(DATAPATH, engine="pyarrow")
     # TODO: to save more memory, it is possible to split train, val, test beforehand and save to file. 
-    np.random.seed(112)
+    # np.random.seed(112)
     df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
     ## WANDB INIT
