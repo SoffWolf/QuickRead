@@ -148,168 +148,168 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
             sum2_id = sum2.to(device)
             
             # Zero gradients:
-            optimizer.zero_grad()
-
-            # Output rewards
-            predicted_reward_1 = model(post_id, sum1_id)
-            predicted_reward_2 = model(post_id, sum2_id)
-            
-
-            # Loss and accuracy
-            batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
-            total_loss_train = total_loss_train + batch_loss
-            step = step + 1
-            
-            # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
-            acc = (predicted_reward_1 > predicted_reward_2).sum().item()
-            total_acc_train = total_acc_train + acc
-            acc_per_100 = acc_per_100 + acc
-
-            # Backward
-            batch_loss.backward()
-            optimizer.step()
-
-            if step % 100 == 0:
-                acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
-                # Logging
-                wandb.log({ "train/batch-loss": batch_loss,
-                            "train/total-batch-loss": total_loss_train,
-                            "train/total-batch-acc": total_acc_train,
-                            "train/batch-total_acc_train-per-100-step": acc_per_100})
-                acc_per_100 = 0
-            
-            # Save checkpoint on every 10000 steps:
-            if step % 10000 == 0:
-                checkpoint = {
-                        'step': step,
-                        'state_dict': model.state_dict(),
-                        'optimizer' :optimizer.state_dict(),
-                        "batch-loss": batch_loss,
-                        "total-batch-loss": total_loss_train,
-                        "total-batch-acc": total_acc_train,
-                        "batch-total_acc_train-per-100-step": acc_per_100
-                        }
-                torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
-                wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
-
-            # Manually update learning rate:
-            if step % (100*700) == 0:
-                print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
-                print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 6e-6
-                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
-            
-            if step % (100*1000) == 0:
-                print("Step where the learning rate is changed from 9e-7 to 7e-7: ", step)
-                print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 5e-6
-                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
-            
-            if step % (100*1300) == 0:
-                print("Step where the learning rate is changed from 7e-7 to 5e-7: ", step)
-                print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 3e-6
-                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
-            
-            if step % (100*1400) == 0:
-                print("Step where the learning rate is changed from 5e-7 to 2e-7: ", step)
-                print("Previous LR = ", optimizer.param_groups[0]['lr'])
-                optimizer.param_groups[0]['lr'] = 1e-6
-                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
-
-        total_acc_val = 0
-        total_loss_val = 0
-        step = 0
-        acc_per_100 = 0
-        model.train(False)
-        with torch.no_grad():
-
-            for post, sum1, sum2 in tqdm(val_dataloader):
-
-                # Input
-                post_id = post.to(device)
-                sum1_id = sum1.to(device)
-                sum2_id = sum2.to(device)
-
-                #Output rewards
-                predicted_reward_1 = model(post_id, sum1_id)
-                predicted_reward_2 = model(post_id, sum2_id)
-
-                # Loss and accuracy
-                batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
-                total_loss_val+= batch_loss
-                step += 1
-
-                acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
-                total_acc_val += acc
-                acc_per_100 += acc
-                if step % 100 == 0:
-                    acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
-                    
-                    # Logging
-                    wandb.log({ "val/batch-loss": batch_loss,
-                                "val/total-batch-loss": total_loss_val,
-                                "val/total-batch-acc": total_acc_val,
-                                "val/batch-total_acc-per-100-step": acc_per_100})
-                    acc_per_100 = 0
-        print(
-              f'Epochs: {epoch_num + 1} \
-              | Train Loss: {total_loss_train / len(train_data): .3f} \
-              | Train Accuracy: {total_acc_train / len(train_data): .3f} \
-              | Val Loss: {total_loss_val / len(val_data): .3f} \
-              | Val Accuracy: {total_acc_val / len(val_data): .3f}')
-        
-        wandb.log({"Epoch": epoch_num + 1,
-                   "train/Epoch-train-loss": total_loss_train / len(train_data),
-                   "train/Train-acc": total_acc_train / len(train_data),
-                   "val/Epoch-val-loss": total_loss_val / len(val_data),
-                   "val/Val-acc": total_acc_val / len(val_data) })
-
-        # Save model at the end of an epoch
-        checkpoint = {
-                    'epoch': epoch_num+1,
-                    'state_dict': model.state_dict(),
-                    'optimizer' :optimizer.state_dict(),
-                    'train_loss' : total_loss_train / len(train_data),
-                    'val_loss' : total_loss_val / len(val_data)
-                    }
-        torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'epoch-{}.pth'.format(epoch_num+1)))
-
-    model.push_to_hub("QuickRead/" + RUN_NAME)
-    tokenizer.push_to_hub("QuickRead/" + RUN_NAME)
-    
-
-def test(model, df_test):
-    if use_cuda:
-        model = model.cuda()
-    test = Dataset(df_test)
-
-    test_dataloader = torch.utils.data.DataLoader(test, collate_fn=collate)
-    total_acc_test = 0
-    step = 0
-    acc_per_100 = 0
-
-    model.eval()
-    with torch.no_grad():
-        for post, sum1, sum2 in tqdm(test_dataloader):
-
-            # Input
-            post_id = post.to(device)
-            sum1_id = sum1.to(device)
-            sum2_id = sum2.to(device)
-
-            #Output rewards
-            predicted_reward_1 = model(post_id, sum1_id)
-            predicted_reward_2 = model(post_id, sum2_id)
-
-            acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
-            total_acc_test += acc
-            acc_per_100 += acc
-            if step % 100 == 0:
-                acc_per_100 = acc_per_100/(100)
-            acc_per_100 = 0
-    print(
-            f'Test accuracy: {total_acc_test / len(df_test): .3f}\n')
+#            optimizer.zero_grad()
+#
+#            # Output rewards
+#            predicted_reward_1 = model(post_id, sum1_id)
+#            predicted_reward_2 = model(post_id, sum2_id)
+#            
+#
+#            # Loss and accuracy
+#            batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
+#            total_loss_train = total_loss_train + batch_loss
+#            step = step + 1
+#            
+#            # ACC increases when predicted_reward_1 is larger than predicted_reward_2 ??? 
+#            acc = (predicted_reward_1 > predicted_reward_2).sum().item()
+#            total_acc_train = total_acc_train + acc
+#            acc_per_100 = acc_per_100 + acc
+#
+#            # Backward
+#            batch_loss.backward()
+#            optimizer.step()
+#
+#            if step % 100 == 0:
+#                acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
+#                # Logging
+#                wandb.log({ "train/batch-loss": batch_loss,
+#                            "train/total-batch-loss": total_loss_train,
+#                            "train/total-batch-acc": total_acc_train,
+#                            "train/batch-total_acc_train-per-100-step": acc_per_100})
+#                acc_per_100 = 0
+#            
+#            # Save checkpoint on every 10000 steps:
+#            if step % 10000 == 0:
+#                checkpoint = {
+#                        'step': step,
+#                        'state_dict': model.state_dict(),
+#                        'optimizer' :optimizer.state_dict(),
+#                        "batch-loss": batch_loss,
+#                        "total-batch-loss": total_loss_train,
+#                        "total-batch-acc": total_acc_train,
+#                        "batch-total_acc_train-per-100-step": acc_per_100
+#                        }
+#                torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
+#                wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
+#
+#            # Manually update learning rate:
+#            if step % (100*700) == 0:
+#                print("Step where the learning rate is changed from 1e-6 to 9e-7: ", step)
+#                print("Previous LR = ", optimizer.param_groups[0]['lr'])
+#                optimizer.param_groups[0]['lr'] = 6e-6
+#                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
+#            
+#            if step % (100*1000) == 0:
+#                print("Step where the learning rate is changed from 9e-7 to 7e-7: ", step)
+#                print("Previous LR = ", optimizer.param_groups[0]['lr'])
+#                optimizer.param_groups[0]['lr'] = 5e-6
+#                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
+#            
+#            if step % (100*1300) == 0:
+#                print("Step where the learning rate is changed from 7e-7 to 5e-7: ", step)
+#                print("Previous LR = ", optimizer.param_groups[0]['lr'])
+#                optimizer.param_groups[0]['lr'] = 3e-6
+#                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
+#            
+#            if step % (100*1400) == 0:
+#                print("Step where the learning rate is changed from 5e-7 to 2e-7: ", step)
+#                print("Previous LR = ", optimizer.param_groups[0]['lr'])
+#                optimizer.param_groups[0]['lr'] = 1e-6
+#                print("LR after updated = ", optimizer.param_groups[0]['lr'],"\n-------------------------------\n")
+#
+#        total_acc_val = 0
+#        total_loss_val = 0
+#        step = 0
+#        acc_per_100 = 0
+#        model.train(False)
+#        with torch.no_grad():
+#
+#            for post, sum1, sum2 in tqdm(val_dataloader):
+#
+#                # Input
+#                post_id = post.to(device)
+#                sum1_id = sum1.to(device)
+#                sum2_id = sum2.to(device)
+#
+#                #Output rewards
+#                predicted_reward_1 = model(post_id, sum1_id)
+#                predicted_reward_2 = model(post_id, sum2_id)
+#
+#                # Loss and accuracy
+#                batch_loss = criterion(torch.sub(predicted_reward_1,predicted_reward_2))
+#                total_loss_val+= batch_loss
+#                step += 1
+#
+#                acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
+#                total_acc_val += acc
+#                acc_per_100 += acc
+#                if step % 100 == 0:
+#                    acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
+#                    
+#                    # Logging
+#                    wandb.log({ "val/batch-loss": batch_loss,
+#                                "val/total-batch-loss": total_loss_val,
+#                                "val/total-batch-acc": total_acc_val,
+#                                "val/batch-total_acc-per-100-step": acc_per_100})
+#                    acc_per_100 = 0
+#        print(
+#              f'Epochs: {epoch_num + 1} \
+#              | Train Loss: {total_loss_train / len(train_data): .3f} \
+#              | Train Accuracy: {total_acc_train / len(train_data): .3f} \
+#              | Val Loss: {total_loss_val / len(val_data): .3f} \
+#              | Val Accuracy: {total_acc_val / len(val_data): .3f}')
+#        
+#        wandb.log({"Epoch": epoch_num + 1,
+#                   "train/Epoch-train-loss": total_loss_train / len(train_data),
+#                   "train/Train-acc": total_acc_train / len(train_data),
+#                   "val/Epoch-val-loss": total_loss_val / len(val_data),
+#                   "val/Val-acc": total_acc_val / len(val_data) })
+#
+#        # Save model at the end of an epoch
+#        checkpoint = {
+#                    'epoch': epoch_num+1,
+#                    'state_dict': model.state_dict(),
+#                    'optimizer' :optimizer.state_dict(),
+#                    'train_loss' : total_loss_train / len(train_data),
+#                    'val_loss' : total_loss_val / len(val_data)
+#                    }
+#        torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'epoch-{}.pth'.format(epoch_num+1)))
+#
+#    model.push_to_hub("QuickRead/" + RUN_NAME)
+#    tokenizer.push_to_hub("QuickRead/" + RUN_NAME)
+#    
+#
+#def test(model, df_test):
+#    if use_cuda:
+#        model = model.cuda()
+#    test = Dataset(df_test)
+#
+#    test_dataloader = torch.utils.data.DataLoader(test, collate_fn=collate)
+#    total_acc_test = 0
+#    step = 0
+#    acc_per_100 = 0
+#
+#    model.eval()
+#    with torch.no_grad():
+#        for post, sum1, sum2 in tqdm(test_dataloader):
+#
+#            # Input
+#            post_id = post.to(device)
+#            sum1_id = sum1.to(device)
+#            sum2_id = sum2.to(device)
+#
+#            #Output rewards
+#            predicted_reward_1 = model(post_id, sum1_id)
+#            predicted_reward_2 = model(post_id, sum2_id)
+#
+#            acc = (predicted_reward_1 > predicted_reward_2).sum().item()                
+#            total_acc_test += acc
+#            acc_per_100 += acc
+#            if step % 100 == 0:
+#                acc_per_100 = acc_per_100/(100)
+#            acc_per_100 = 0
+#    print(
+#            f'Test accuracy: {total_acc_test / len(df_test): .3f}\n')
 
 if __name__== "__main__":
 
@@ -320,10 +320,10 @@ if __name__== "__main__":
     df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
     ## WANDB INIT
-    group = "quickread"
-    project = "text-summary-reward-model"
-    display_name = RUN_NAME
-    wandb.init(entity=group, project=project, name=display_name, resume=True)
+#     group = "quickread"
+#     project = "text-summary-reward-model"
+#     display_name = RUN_NAME
+#     wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
@@ -358,7 +358,7 @@ if __name__== "__main__":
         
         # model.train()
 
-    test(model, df_test)
+    # test(model, df_test)
 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
