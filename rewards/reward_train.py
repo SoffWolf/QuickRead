@@ -126,15 +126,15 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
 
 
     # WANDB 
-    wandb.watch(model, log="all")
+    #wandb.watch(model, log="all")
     for epoch_num in range(EPOCHS):
         total_acc_train = 0
         total_loss_train = 0
         acc_per_100 = 0
         step = 0
         if resume:
-            if wandb.run.resumed:
-                print("Resumed result from WandB")
+            # if wandb.run.resumed:
+            #     print("Resumed result from WandB")
             step = checkpoints['step']
             batch_loss = checkpoints['batch-loss']
             total_loss_train = checkpoints['total-batch-loss']
