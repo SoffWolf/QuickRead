@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_incr_lr_v2"
+RUN_NAME = "RM_r_train"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -49,8 +49,8 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.labels)
     def get_batch_labels(self, idx):
         # Fetch a batch of labels
-        # return np.array(int(self.labels[idx]))
-        return torch.tensor(int(self.labels[idx]))
+        return np.array(int(self.labels[idx]))
+        # return torch.tensor(int(self.labels[idx]))
     def get_batch_posts(self, idx):
         # Fetch a batch of inputs
         return self.post[idx]
