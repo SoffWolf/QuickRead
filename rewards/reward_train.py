@@ -146,7 +146,12 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
             post_id = post.to(device)
             sum1_id = sum1.to(device)
             sum2_id = sum2.to(device)
-            
+            if (post_id is None):
+                pass
+            if (sum1_id is None):
+                pass
+            if (sum2_id is None):
+                pass
             # Zero gradients:
 #            optimizer.zero_grad()
 #
