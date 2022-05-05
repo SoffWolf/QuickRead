@@ -39,7 +39,7 @@ config = {
     "cliprange_value":.2,
     "vf_coef":.1, 
 }
-RUN_NAME = "PP0_rm_v1_full"
+RUN_NAME = "PP0_rm_v1_gpu"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -56,6 +56,7 @@ supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead
 # Reward model
 reward_model = RewardModel(supervised_baseline)
 reward_model.load_state_dict(torch.load(os.path.join(RM_PATH)), strict=False)
+#reward_model.load_state_dict(torch.load(os.path.join(RM_PATH),map_location=torch.device('cpu')), strict=False)
 
 # Policy model
 policy = PegasusWithValueHead(supervised_baseline)
@@ -68,8 +69,8 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cpu")
 
 _ = supervised_baseline.to(device)
 _ = reward_model.to(device)
@@ -105,7 +106,7 @@ else:
 n_except = 0
 for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"])))):
-    # torch.cuda.empty_cache()
+    torch.cuda.empty_cache()
     logs = dict()
     timing = dict()
     t0 = time.time()
