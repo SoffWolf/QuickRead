@@ -51,13 +51,13 @@ def logprobs_from_logits(logits, labels):
     """
     See: https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591
     """
-    print("Before softmax")
+    #print("Before softmax")
     logp = F.log_softmax(logits, dim=2)
-    print("inside logprob: ", logits.shape, labels.shape, logp.shape)
-    print("labels.unsqueeze(2) TYPE: ", labels.unsqueeze(2).dtype)
+    #print("inside logprob: ", logits.shape, labels.shape, logp.shape)
+    #print("labels.unsqueeze(2) TYPE: ", labels.unsqueeze(2).dtype)
     #print("torch.FloatTensor(logp).to(dtype=torch.float64) TYPE: ", torch.FloatTensor(logp).to(dtype=torch.float64).dtype)
     logpy = torch.gather(logp, 2, labels.unsqueeze(2)).squeeze(-1)
-    print("DONE with gather")
+    #print("DONE with gather")
     return logpy
 
 
