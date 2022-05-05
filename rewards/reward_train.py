@@ -14,7 +14,7 @@ from reward_model import RewardModel
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_r_train"
+RUN_NAME = "RM_rm_train"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
 EPOCHS = 1
 LR = 1e-5
@@ -49,8 +49,8 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.labels)
     def get_batch_labels(self, idx):
         # Fetch a batch of labels
-        return np.array(int(self.labels[idx]))
-        # return torch.tensor(int(self.labels[idx]))
+        # return np.array(int(self.labels[idx]))
+        return torch.tensor(int(self.labels[idx]))
     def get_batch_posts(self, idx):
         # Fetch a batch of inputs
         return self.post[idx]
@@ -146,7 +146,12 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
             post_id = post.to(device)
             sum1_id = sum1.to(device)
             sum2_id = sum2.to(device)
-            
+            if (post_id is None):
+                pass
+            if (sum1_id is None):
+                pass
+            if (sum2_id is None):
+                pass
             # Zero gradients:
 #            optimizer.zero_grad()
 #
