@@ -40,7 +40,7 @@ class RewardModel(nn.Module):
         self.supervised_baseline = supervised_baseline
         
         # Add a randomly initialized linear head that outputs a scalar value
-        init_std = init_scales / torch.sqrt(d_model + 1)  #.get(name, 1.0)
+        init_std = init_scales / torch.sqrt(torch.tensor(d_model + 1))  #.get(name, 1.0)
         head = nn.Linear(d_model, 1)
         nn.init.normal_(head.weight, std=init_std) #nn.init: initialize weight for a single layer
         nn.init.zeros_(head.bias)
