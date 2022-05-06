@@ -8,6 +8,7 @@ import pandas as pd
 tqdm.pandas()
 import sys
 sys.path.insert(0,'..')
+from sklearn.utils import shuffle
 
 from datasets import load_dataset, load_from_disk
 from transformers import GPT2Tokenizer
@@ -106,8 +107,12 @@ else:
     ## Now the epoch is still gonna be retrained
 
 n_except = 0
+error_lst = []
 for epoch in range(1):
-    sample = df.sample(len(df))   #config["batch_size"])
+    sample = shuffle(df)
+    if len(sample) != df.shape[0]:
+        break
+    print(len(sample[0]), df.shape[0][0])
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
     for k in tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
@@ -135,67 +140,73 @@ for epoch in range(1):
             # print(summary(reward_model))
             print(f'\tquery ("{i}"): \n\t{query.shape}')
             print(f'\tresponse ("{i}"): \n\t{response.shape}')
-            reward_model.eval()
-            with torch.no_grad():
-                reward = reward_model(query, response).detach()
-            reward = reward.to(device)
+            try:
+                reward_model.eval()
+                with torch.no_grad():
+                    reward = reward_model(query, response).detach()
+                reward = reward.to(device)
+            except Exception as e:
+                print(type(e))
+                print(e.args)
+                print(e)
+                error_lst.append(e)
 
-            query_tensors = query_tensors + list(torch.split(query,1))
-
-            response_tensors = response_tensors + list(torch.split(response,1))
-
-            rewards.append(reward)
-                
-                # print the generate result every 1000 epochs
-            if (k+1) % 1000 == 0:
-                print(response)
-
-            # except Exception as e1:
-            #     print(e1)
-            #     n_except =  n_except + 1
-            #     print("Number of EXCEPTS =", n_except)
-        for k in range(len(query_tensors)):
-            query_tensors[k] = query_tensors[k].squeeze(0)
-            response_tensors[k] = response_tensors[k].squeeze(0)
-
-        query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-        response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-        query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-        response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-        # print("Rewards before torch.cat: ", rewards)
-        rewards = torch.cat(rewards).to(device)
-        # print("Rewards after torch.cat: ", rewards)
-        query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-        response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-
-        #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-        stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-
-        #### Log everything
-        timing['time/epoch'] = time.time()-t0
-        logs.update(timing)
-        logs.update(stats)
-        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-        logs['env/reward_dist'] = rewards.cpu().numpy()
-        wandb.log(logs)
-
-        if (epoch+1) % 2000 == 0:
-            # print("EPOCH: ", epoch)
-            # HF push_to_hub:
-            policy.push_to_hub("SophieTr/"+RUN_NAME)
-            tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-            # Save checkpoint (TOBE DONE)
-            checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
-            torch.save( checkpoint, CHECKPOINT_PATH )
-            wandb.save(CHECKPOINT_PATH)
-
-        
-# HF push_to_hub:
-policy.push_to_hub("SophieTr/"+RUN_NAME)
-tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-
-# print("N_EXCEPTIONS = ", n_except)
-checkpoint = {'state_dict': policy.state_dict()}
-#torch.save(checkpoint, os.path.join("./result/test.pth"))
-torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
+#             query_tensors = query_tensors + list(torch.split(query,1))
+# 
+#             response_tensors = response_tensors + list(torch.split(response,1))
+# 
+#             rewards.append(reward)
+#                 
+#                 # print the generate result every 1000 epochs
+#             # if (k+1) % 1000 == 0:
+#             #     print(response)
+# 
+#             # except Exception as e1:
+#             #     print(e1)
+#             #     n_except =  n_except + 1
+#             #     print("Number of EXCEPTS =", n_except)
+#         for k in range(len(query_tensors)):
+#             query_tensors[k] = query_tensors[k].squeeze(0)
+#             response_tensors[k] = response_tensors[k].squeeze(0)
+# 
+#         query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
+#         response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
+#         query_tensors = query_tensors.unsqueeze(dim=0).to(device)
+#         response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+#         # print("Rewards before torch.cat: ", rewards)
+#         rewards = torch.cat(rewards).to(device)
+#         # print("Rewards after torch.cat: ", rewards)
+#         query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
+#         response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
+# 
+#         #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
+#         # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+# 
+#         #### Log everything
+#         timing['time/epoch'] = time.time()-t0
+#         logs.update(timing)
+#         logs.update(stats)
+#         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+#         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+#         logs['env/reward_dist'] = rewards.cpu().numpy()
+#         wandb.log(logs)
+# 
+#         if (epoch+1) % 2000 == 0:
+#             # print("EPOCH: ", epoch)
+#             # HF push_to_hub:
+#             policy.push_to_hub("SophieTr/"+RUN_NAME)
+#             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+#             # Save checkpoint (TOBE DONE)
+#             checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+#             torch.save( checkpoint, CHECKPOINT_PATH )
+#             wandb.save(CHECKPOINT_PATH)
+# 
+#         
+# # HF push_to_hub:
+# policy.push_to_hub("SophieTr/"+RUN_NAME)
+# tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+# 
+# # print("N_EXCEPTIONS = ", n_except)
+# checkpoint = {'state_dict': policy.state_dict()}
+# #torch.save(checkpoint, os.path.join("./result/test.pth"))
+# torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
