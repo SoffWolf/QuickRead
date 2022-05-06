@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_rm_v3_gpu"
+RUN_NAME = "PP0_rm_v2_gpu"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -109,7 +109,7 @@ else:
 n_except = 0
 error_lst = []
 for epoch in range(1):
-    sample = df #shuffle(df)
+    sample = df # shuffle(df)
     if len(sample) != df.shape[0]:
         break
     #print(len(sample[0]), df.shape[0][0])
@@ -149,7 +149,6 @@ for epoch in range(1):
                 print(f'Error is: {e}\nError args: {e.args}\nError type: {type(e)}')
                 print(f'SHAPE OF ERROR QUERY: {query.shape}\n SHAPE OF ERROR RESPONSE: {response.shape}\n')
                 error_lst.append(k*8 + i) # [query, response])
-                # error_lst.append([query, response])
 #             query_tensors = query_tensors + list(torch.split(query,1))
 # 
 #             response_tensors = response_tensors + list(torch.split(response,1))
@@ -213,10 +212,10 @@ for epoch in range(1):
 #     i = 0
 #     for (q, r) in error_lst:
 #         f.write("Error " + i)
-#     f.write(q)
-#     f.write('\n')
-#     f.write(r)
-#     f.write('--.--'*100)
-#     f.write('\n')
-#     i+=1
+# 	f.write(q)
+#         f.write('\n')
+# 	f.write(r)
+# 	f.write('--.--'*100)
+# 	f.write('\n')
+# 	i+=1
 print("Error lst: ", error_lst)
