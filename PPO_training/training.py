@@ -112,7 +112,7 @@ for epoch in range(1):
     sample = shuffle(df)
     if len(sample) != df.shape[0]:
         break
-    print(len(sample[0]), df.shape[0][0])
+    #print(len(sample[0]), df.shape[0][0])
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
     for k in tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
@@ -146,10 +146,9 @@ for epoch in range(1):
                     reward = reward_model(query, response).detach()
                 reward = reward.to(device)
             except Exception as e:
-                print(type(e))
-                print(e.args)
-                print(e)
-                error_lst.append(e)
+                print(f'Error is: {e}\nError args: {e.args}\nError type: {type(e)}')
+		print(f'SHAPE OF ERROR QUERY: {query.shape}\n SHAPE OF ERROR RESPONSE: {response.shape}\n')
+                error_lst.append([query, response])
 
 #             query_tensors = query_tensors + list(torch.split(query,1))
 # 
@@ -210,3 +209,13 @@ for epoch in range(1):
 # checkpoint = {'state_dict': policy.state_dict()}
 # #torch.save(checkpoint, os.path.join("./result/test.pth"))
 # torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
+with open('err_query_response.txt', 'w') as f:
+    i = 0
+    for (q, r) in error_lst:
+        f.write("Error " + i)
+	f.write(q)
+        f.write('\n')
+	f.write(r)
+	f.write('--.--'*100)
+	f.write('\n')
+	i+=1
