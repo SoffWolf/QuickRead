@@ -138,15 +138,15 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
         model = model.cuda()
 
     # WANDB 
-    wandb.watch(model, log="all")
+    #wandb.watch(model, log="all")
     for epoch_num in range(EPOCHS):
         total_acc_train = 0
         total_loss_train = 0
         acc_per_100 = 0
         step = 0
         if resume:
-            if wandb.run.resumed:
-                print("Resumed result from WandB")
+            # if wandb.run.resumed:
+            #     print("Resumed result from WandB")
             step = checkpoints['step']
             batch_loss = checkpoints['batch-loss']
             total_loss_train = checkpoints['total-batch-loss']
@@ -195,10 +195,10 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
                 if step % 100 == 0:
                     acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
                     # Logging
-                    wandb.log({ "train/batch-loss": batch_loss,
-                                "train/total-batch-loss": total_loss_train,
-                                "train/total-batch-acc": total_acc_train,
-                                "train/batch-total_acc_train-per-100-step": acc_per_100})
+                    # wandb.log({ "train/batch-loss": batch_loss,
+                    #             "train/total-batch-loss": total_loss_train,
+                    #             "train/total-batch-acc": total_acc_train,
+                    #             "train/batch-total_acc_train-per-100-step": acc_per_100})
                     acc_per_100 = 0
                 
                 # Save checkpoint on every 10000 steps:
@@ -213,7 +213,7 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
                             "batch-total_acc_train-per-100-step": acc_per_100
                             }
                     torch.save(checkpoint, os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
-                    wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
+                    # wandb.save(os.path.join(CHECKPOINT_PATH, 'lateststep.pth'))
 
                 # Manually update learning rate:
                 if step % (100*700) == 0:
@@ -270,10 +270,10 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
                     acc_per_100 = acc_per_100/(BATCH_SIZE * 100)
                     
                     # Logging
-                    wandb.log({ "val/batch-loss": batch_loss,
-                                "val/total-batch-loss": total_loss_val,
-                                "val/total-batch-acc": total_acc_val,
-                                "val/batch-total_acc-per-100-step": acc_per_100})
+                    # wandb.log({ "val/batch-loss": batch_loss,
+                    #             "val/total-batch-loss": total_loss_val,
+                    #             "val/total-batch-acc": total_acc_val,
+                    #             "val/batch-total_acc-per-100-step": acc_per_100})
                     acc_per_100 = 0
         print(
               f'Epochs: {epoch_num + 1} \
@@ -282,11 +282,11 @@ def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None
               | Val Loss: {total_loss_val / len(val_data): .3f} \
               | Val Accuracy: {total_acc_val / len(val_data): .3f}')
         
-        wandb.log({"Epoch": epoch_num + 1,
-                   "train/Epoch-train-loss": total_loss_train / len(train_data),
-                   "train/Train-acc": total_acc_train / len(train_data),
-                   "val/Epoch-val-loss": total_loss_val / len(val_data),
-                   "val/Val-acc": total_acc_val / len(val_data) })
+        # wandb.log({"Epoch": epoch_num + 1,
+        #            "train/Epoch-train-loss": total_loss_train / len(train_data),
+        #            "train/Train-acc": total_acc_train / len(train_data),
+        #            "val/Epoch-val-loss": total_loss_val / len(val_data),
+        #            "val/Val-acc": total_acc_val / len(val_data) })
 
         # Save model at the end of an epoch
         checkpoint = {
@@ -346,7 +346,7 @@ if __name__== "__main__":
     group = "quickread"
     project = "text-summary-reward-model"
     display_name = RUN_NAME
-    wandb.init(entity=group, project=project, name=display_name, resume=True)
+    #wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)

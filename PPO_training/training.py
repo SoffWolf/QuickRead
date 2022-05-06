@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_rm_v2_gpu"
+RUN_NAME = "PP0_rm_v4_gpu"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -133,10 +133,13 @@ for epoch in range(1):
             query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
             query = query.to(device)
             # print("QUERY (", i, ") = ",query.shape)
-            response = policy.generate(query)
+            response = policy.generate(query) # will not produce text
             response = response.to(device)
             if i == 0:
-                print(f'RESPONSE ("{i}") from mini batch ("{k}") is {response}')
+                if k == 0 or k%500 == 0:
+                    resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+
+                    print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}')
             # print(summary(reward_model))
             print(f'\tquery ("{i}"): \n\t{query.shape}')
             print(f'\tresponse ("{i}"): \n\t{response.shape}')
@@ -149,6 +152,7 @@ for epoch in range(1):
                 print(f'Error is: {e}\nError args: {e.args}\nError type: {type(e)}')
                 print(f'SHAPE OF ERROR QUERY: {query.shape}\n SHAPE OF ERROR RESPONSE: {response.shape}\n')
                 error_lst.append(k*8 + i) # [query, response])
+                continue
 #             query_tensors = query_tensors + list(torch.split(query,1))
 # 
 #             response_tensors = response_tensors + list(torch.split(response,1))
