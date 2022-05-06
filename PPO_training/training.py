@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_rm_v2_gpu"
+RUN_NAME = "PP0_rm_v3_gpu"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -51,7 +51,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
 group = "quickread"
 project = "PPO-training"
 display_name = RUN_NAME
-wandb.init(entity=group, project=project, name=display_name, config=config)
+#wandb.init(entity=group, project=project, name=display_name, config=config)
 
 # load supervised baseline
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -69,7 +69,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 # save_directory = RUN_NAME
 # policy.save(save_directory, True, "QuickRead")
 # Wandb
-wandb.watch(policy, log='all')
+#wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -109,7 +109,7 @@ else:
 n_except = 0
 error_lst = []
 for epoch in range(1):
-    sample = shuffle(df)
+    sample = df #shuffle(df)
     if len(sample) != df.shape[0]:
         break
     #print(len(sample[0]), df.shape[0][0])
@@ -148,8 +148,8 @@ for epoch in range(1):
             except Exception as e:
                 print(f'Error is: {e}\nError args: {e.args}\nError type: {type(e)}')
                 print(f'SHAPE OF ERROR QUERY: {query.shape}\n SHAPE OF ERROR RESPONSE: {response.shape}\n')
-                # error_lst.append(k*8 + i) # [query, response])
-                error_lst.append([query, response])
+                error_lst.append(k*8 + i) # [query, response])
+                # error_lst.append([query, response])
 #             query_tensors = query_tensors + list(torch.split(query,1))
 # 
 #             response_tensors = response_tensors + list(torch.split(response,1))
@@ -209,14 +209,14 @@ for epoch in range(1):
 # checkpoint = {'state_dict': policy.state_dict()}
 # #torch.save(checkpoint, os.path.join("./result/test.pth"))
 # torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
-with open('err_query_response.txt', 'w') as f:
-    i = 0
-    for (q, r) in error_lst:
-        f.write("Error " + i)
-        f.write(q)
-        f.write('\n')
-        f.write(r)
-        f.write('--.--'*100)
-        f.write('\n')
-        i+=1
-# print("Error lst: ", error_lst)
+# with open('err_query_response.txt', 'w') as f:
+#     i = 0
+#     for (q, r) in error_lst:
+#         f.write("Error " + i)
+#     f.write(q)
+#     f.write('\n')
+#     f.write(r)
+#     f.write('--.--'*100)
+#     f.write('\n')
+#     i+=1
+print("Error lst: ", error_lst)
