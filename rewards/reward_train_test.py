@@ -16,11 +16,14 @@ from torch.profiler import profile, record_function, ProfilerActivity
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_torch_profiler"
+RUN_NAME = "RM_test_torchProfiler"
 SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
+
+# Model utils
 EPOCHS = 1
 LR = 1e-5
 BATCH_SIZE = 1
+
 # unchanged
 DATAPATH = 'data/human_feedback.parquet'
 KEY_PATH = "../PPO_training/hfAPI.txt"
@@ -101,9 +104,16 @@ def collate(list_of_samples):
     return posts, sum1s, sum2s
 
 # Purpose: Prevent duplicated training data tensor (Source: https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/)
-def worker_init_fn(worker_id):                                                          
+def worker_init_fn(worker_id):    
+    ''' This function is used for Dataloader to create random seeds for'''                                                      
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
+def trace_handler(p):
+    ''' This function is used for Torch profiler to print data trace log '''                                                      
+
+    output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
+    print(output)
+    p.export_chrome_trace("/tmp/trace_" + str(p.step_num) + ".json")
 def criterion(x):
     s = nn.Sigmoid()
     sigmoid_r = s(x)
@@ -118,10 +128,6 @@ def criterion(x):
 
 ## TRAINING LOOP
 def train(model, train_data, val_data, optimizer, resume=False, checkpoints=None):
-    def trace_handler(p):
-        output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
-        print(output)
-        p.export_chrome_trace("/tmp/trace_" + str(p.step_num) + ".json")
     
     train, val = Dataset(train_data), Dataset(val_data)
 
@@ -337,10 +343,10 @@ if __name__== "__main__":
     df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
     ## WANDB INIT
-     group = "quickread"
-     project = "text-summary-reward-model"
-     display_name = RUN_NAME
-     wandb.init(entity=group, project=project, name=display_name, resume=True)
+    group = "quickread"
+    project = "text-summary-reward-model"
+    display_name = RUN_NAME
+    wandb.init(entity=group, project=project, name=display_name, resume=True)
 
     ### Load model
     tokenizer = PegasusTokenizer.from_pretrained(SUPERVISED_MODEL)
@@ -358,7 +364,6 @@ if __name__== "__main__":
             os.mkdir(RUN_NAME)
         #save_directory = "QuickRead/" + RUN_NAME
         #model.save(save_directory, True, key, "QuickRead")
-        # wandb.init(entity=group, project=project, name=display_name)
         train(model, df_train, df_val, optimizer)
 
     else:
@@ -370,7 +375,6 @@ if __name__== "__main__":
         model.load_state_dict(checkpoint['state_dict'])
         model.to(device)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        # wandb.init(entity=group, project=project, name=display_name, resume=True)
         train(model, df_train, df_val, optimizer, resume=True, checkpoints=checkpoint)
         
         # model.train()
@@ -379,6 +383,3 @@ if __name__== "__main__":
 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html#load-the-general-checkpoint 
 #https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html 
-
-
-

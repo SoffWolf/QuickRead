@@ -31,6 +31,7 @@ pyvenv.cfg
 /PPO_training/training.py.save.1
 /PPO_training/wandb/*
 /PPO_training/ppo_train_testHF.out
+PPO_training/PPO_rm_v1_gpu.out
 /fine_tune/HFpipeline/HF_HOME/*
 /fine_tune/HFpipeline/tst-summarization-Pegasus/*
 /fine_tune/HFpipeline/test_pegasus-fine-tune.out

@@ -19,8 +19,6 @@ from rewards.reward_model import RewardModel
 
 # from torchsummary import summary
 
-
-
 config = {
     "lm_name": "QuickRead/pegasus-reddit-7e05",   # policy: supervised baseline
     "ref_lm_name": "QuickRead/pegasus-reddit-7e05",   # find out about the ref model
@@ -32,16 +30,17 @@ config = {
     "ppo_epochs": 1,   
     "txt_in_len": 5,
     "txt_out_len": 15,
-    "lr": 1.41e-5,    # check this in the paper
-    "init_kl_coef":0.2,   # check this in the paper
+    "lr": 1.41e-5,          # check this in the paper
+    "init_kl_coef":0.2,     # check this in the paper
     "target": 6,
     "horizon":10000,
-    "gamma":1,    # also check these in the paper
+    "gamma":1,              # also check these in the paper
     "lam":0.95,
     "cliprange": .2,
     "cliprange_value":.2,
     "vf_coef":.1, 
 }
+
 RUN_NAME = "PP0_rm_v1_gpu"
 RM_name = "RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
@@ -86,7 +85,7 @@ train_texts, train_labels = dataset['train']['content'], dataset['train']['summa
 val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
-df = pd.DataFrame(train_texts)
+df = pd.DataFrame(train_texts) # Add a Dataset & Dataloader class to handle loading data from disk, & shuffle & sample
  
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
@@ -131,66 +130,65 @@ for epoch in range(1):
             # print("QUERY (", i, ") = ",query.shape)
             response = policy.generate(query)
             response = response.to(device)
-            # print("RESPONSE (", i, ") = ", response.shape)
-            print("REWARD MODEL:\n ", reward_model)
+            if i == 0:
+                print(f'RESPONSE ("{i}") from mini batch ("{k}") is {response}')
             # print(summary(reward_model))
-            print("\tquery_tensors: \n\t", query)
-            print("\tresponse_tensors: \n\t", response)
+            print(f'\tquery ("{i}"): \n\t{query.shape}')
+            print(f'\tresponse ("{i}"): \n\t{response.shape}')
             reward_model.eval()
             with torch.no_grad():
                 reward = reward_model(query, response).detach()
-        break
-        #     reward = reward.to(device)
+            reward = reward.to(device)
 
-        #     query_tensors = query_tensors + list(torch.split(query,1))
+            query_tensors = query_tensors + list(torch.split(query,1))
 
-        #     response_tensors = response_tensors + list(torch.split(response,1))
+            response_tensors = response_tensors + list(torch.split(response,1))
 
-        #     rewards.append(reward)
+            rewards.append(reward)
                 
-        #         # print the generate result every 1000 epochs
-        #     if (k+1) % 1000 == 0:
-        #         print(response)
+                # print the generate result every 1000 epochs
+            if (k+1) % 1000 == 0:
+                print(response)
 
-        #     # except Exception as e1:
-        #     #     print(e1)
-        #     #     n_except =  n_except + 1
-        #     #     print("Number of EXCEPTS =", n_except)
-        # for k in range(len(query_tensors)):
-        #     query_tensors[k] = query_tensors[k].squeeze(0)
-        #     response_tensors[k] = response_tensors[k].squeeze(0)
+            # except Exception as e1:
+            #     print(e1)
+            #     n_except =  n_except + 1
+            #     print("Number of EXCEPTS =", n_except)
+        for k in range(len(query_tensors)):
+            query_tensors[k] = query_tensors[k].squeeze(0)
+            response_tensors[k] = response_tensors[k].squeeze(0)
 
-        # query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-        # response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-        # query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-        # response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-        # # print("Rewards before torch.cat: ", rewards)
-        # rewards = torch.cat(rewards).to(device)
-        # # print("Rewards after torch.cat: ", rewards)
-        # query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-        # response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
+        query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
+        response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
+        query_tensors = query_tensors.unsqueeze(dim=0).to(device)
+        response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+        # print("Rewards before torch.cat: ", rewards)
+        rewards = torch.cat(rewards).to(device)
+        # print("Rewards after torch.cat: ", rewards)
+        query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
+        response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
 
-        # #### Run PPO training 
-        # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+        #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
+        stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
 
-        # #### Log everything
-        # timing['time/epoch'] = time.time()-t0
-        # logs.update(timing)
-        # logs.update(stats)
-        # logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-        # logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-        # logs['env/reward_dist'] = rewards.cpu().numpy()
-        # wandb.log(logs)
+        #### Log everything
+        timing['time/epoch'] = time.time()-t0
+        logs.update(timing)
+        logs.update(stats)
+        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+        logs['env/reward_dist'] = rewards.cpu().numpy()
+        wandb.log(logs)
 
-        # if (epoch+1) % 2000 == 0:
-        #     # print("EPOCH: ", epoch)
-        #     # HF push_to_hub:
-        #     policy.push_to_hub("SophieTr/"+RUN_NAME)
-        #     tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-        #     # Save checkpoint (TOBE DONE)
-        #     checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
-        #     torch.save( checkpoint, CHECKPOINT_PATH )
-        #     wandb.save(CHECKPOINT_PATH)
+        if (epoch+1) % 2000 == 0:
+            # print("EPOCH: ", epoch)
+            # HF push_to_hub:
+            policy.push_to_hub("SophieTr/"+RUN_NAME)
+            tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+            # Save checkpoint (TOBE DONE)
+            checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+            torch.save( checkpoint, CHECKPOINT_PATH )
+            wandb.save(CHECKPOINT_PATH)
 
         
 # HF push_to_hub:
