@@ -42,8 +42,8 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_rm_v4_gpu"
-RM_name = "RM_incr_lr_v1"
+RUN_NAME = "PP0_v0"
+RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
@@ -51,7 +51,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
 group = "quickread"
 project = "PPO-training"
 display_name = RUN_NAME
-#wandb.init(entity=group, project=project, name=display_name, config=config)
+wandb.init(entity=group, project=project, name=display_name, config=config)
 
 # load supervised baseline
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -69,7 +69,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 # save_directory = RUN_NAME
 # policy.save(save_directory, True, "QuickRead")
 # Wandb
-#wandb.watch(policy, log='all')
+wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -106,8 +106,8 @@ else:
     policy.to(device)
     ## Now the epoch is still gonna be retrained
 
-n_except = 0
-error_lst = []
+# n_except = 0
+# error_lst = []
 for epoch in range(1):
     sample = df # shuffle(df)
     if len(sample) != df.shape[0]:
@@ -141,77 +141,63 @@ for epoch in range(1):
 
                     print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}')
             # print(summary(reward_model))
-            print(f'\tquery ("{i}"): \n\t{query.shape}')
-            print(f'\tresponse ("{i}"): \n\t{response.shape}')
-            try:
-                reward_model.eval()
-                with torch.no_grad():
-                    reward = reward_model(query, response).detach()
-                reward = reward.to(device)
-            except Exception as e:
-                print(f'Error is: {e}\nError args: {e.args}\nError type: {type(e)}')
-                print(f'SHAPE OF ERROR QUERY: {query.shape}\n SHAPE OF ERROR RESPONSE: {response.shape}\n')
-                error_lst.append(k*8 + i) # [query, response])
-                continue
-#             query_tensors = query_tensors + list(torch.split(query,1))
-# 
-#             response_tensors = response_tensors + list(torch.split(response,1))
-# 
-#             rewards.append(reward)
-#                 
-#                 # print the generate result every 1000 epochs
-#             # if (k+1) % 1000 == 0:
-#             #     print(response)
-# 
-#             # except Exception as e1:
-#             #     print(e1)
-#             #     n_except =  n_except + 1
-#             #     print("Number of EXCEPTS =", n_except)
-#         for k in range(len(query_tensors)):
-#             query_tensors[k] = query_tensors[k].squeeze(0)
-#             response_tensors[k] = response_tensors[k].squeeze(0)
-# 
-#         query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-#         response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-#         query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-#         response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-#         # print("Rewards before torch.cat: ", rewards)
-#         rewards = torch.cat(rewards).to(device)
-#         # print("Rewards after torch.cat: ", rewards)
-#         query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-#         response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-# 
-#         #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-#         # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-# 
-#         #### Log everything
-#         timing['time/epoch'] = time.time()-t0
-#         logs.update(timing)
-#         logs.update(stats)
-#         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-#         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-#         logs['env/reward_dist'] = rewards.cpu().numpy()
-#         wandb.log(logs)
-# 
-#         if (epoch+1) % 2000 == 0:
-#             # print("EPOCH: ", epoch)
-#             # HF push_to_hub:
-#             policy.push_to_hub("SophieTr/"+RUN_NAME)
-#             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-#             # Save checkpoint (TOBE DONE)
-#             checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
-#             torch.save( checkpoint, CHECKPOINT_PATH )
-#             wandb.save(CHECKPOINT_PATH)
-# 
-#         
-# # HF push_to_hub:
-# policy.push_to_hub("SophieTr/"+RUN_NAME)
-# tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-# 
-# # print("N_EXCEPTIONS = ", n_except)
-# checkpoint = {'state_dict': policy.state_dict()}
-# #torch.save(checkpoint, os.path.join("./result/test.pth"))
-# torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
+            # print(f'\tquery ("{i}"): \n\t{query.shape}')
+            # print(f'\tresponse ("{i}"): \n\t{response.shape}')
+            
+            reward_model.eval()
+            with torch.no_grad():
+                reward = reward_model(query, response).detach()
+            reward = reward.to(device)
+            
+            query_tensors = query_tensors + list(torch.split(query,1))
+
+            response_tensors = response_tensors + list(torch.split(response,1))
+
+            rewards.append(reward)
+        for k in range(len(query_tensors)):
+            query_tensors[k] = query_tensors[k].squeeze(0)
+            response_tensors[k] = response_tensors[k].squeeze(0)
+
+        query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
+        response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
+        query_tensors = query_tensors.unsqueeze(dim=0).to(device)
+        response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+        # print("Rewards before torch.cat: ", rewards)
+        rewards = torch.cat(rewards).to(device)
+        # print("Rewards after torch.cat: ", rewards)
+        query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
+        response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
+
+        #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
+        # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+
+        #### Log everything
+        timing['time/epoch'] = time.time()-t0
+        logs.update(timing)
+        logs.update(stats)
+        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+        logs['env/reward_dist'] = rewards.cpu().numpy()
+        wandb.log(logs)
+
+        if (epoch+1) % 2000 == 0:
+            # print("EPOCH: ", epoch)
+            # HF push_to_hub:
+            policy.push_to_hub("SophieTr/"+RUN_NAME)
+            tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+            # Save checkpoint (TOBE DONE)
+            checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+            torch.save( checkpoint, CHECKPOINT_PATH )
+            wandb.save(CHECKPOINT_PATH)
+
+        
+# HF push_to_hub:
+policy.push_to_hub("SophieTr/"+RUN_NAME)
+tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+
+checkpoint = {'state_dict': policy.state_dict()}
+#torch.save(checkpoint, os.path.join("./result/test.pth"))
+torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
 # with open('err_query_response.txt', 'w') as f:
 #     i = 0
 #     for (q, r) in error_lst:
@@ -222,4 +208,4 @@ for epoch in range(1):
 # 	f.write('--.--'*100)
 # 	f.write('\n')
 # 	i+=1
-print("Error lst: ", error_lst)
+# print("Error lst: ", error_lst)
