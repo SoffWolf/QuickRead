@@ -169,7 +169,7 @@ for epoch in range(1):
         response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
 
         #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-        # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+        stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
 
         #### Log everything
         timing['time/epoch'] = time.time()-t0
