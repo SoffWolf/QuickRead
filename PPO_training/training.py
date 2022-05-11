@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_v2"
+RUN_NAME = "PPO_v2"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
