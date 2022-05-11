@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_v3"
+RUN_NAME = "PPO_v4"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -51,7 +51,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth')
 group = "quickread"
 project = "PPO-training"
 display_name = RUN_NAME
-wandb.init(entity=group, project=project, name=display_name, config=config)
+# wandb.init(entity=group, project=project, name=display_name, config=config)
 
 # load supervised baseline
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -69,7 +69,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 # save_directory = RUN_NAME
 # policy.save(save_directory, True, "QuickRead")
 # Wandb
-wandb.watch(policy, log='all')
+# wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -178,7 +178,7 @@ for epoch in range(1):
         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
         logs['env/reward_dist'] = rewards.cpu().numpy()
-        wandb.log(logs)
+        # wandb.log(logs)
 
         if k % 500 == 0:
             # print("EPOCH: ", epoch)
@@ -188,7 +188,7 @@ for epoch in range(1):
             # Save checkpoint (TOBE DONE)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
             torch.save( checkpoint, CHECKPOINT_PATH )
-            wandb.save(CHECKPOINT_PATH)
+            # wandb.save(CHECKPOINT_PATH)
 
         
 # HF push_to_hub:
