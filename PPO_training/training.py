@@ -42,11 +42,11 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PP0_v1"
+RUN_NAME = "PP0_v2"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
-CHECKPOINT_PATH = os.path.join(PATH, 'latest_epo.pth')
+CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth')
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
@@ -172,7 +172,7 @@ for epoch in range(1):
         stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
 
         #### Log everything
-        timing['time/epoch'] = time.time()-t0
+        timing['time/mini_batch'] = time.time()-t0
         logs.update(timing)
         logs.update(stats)
         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
@@ -180,13 +180,13 @@ for epoch in range(1):
         logs['env/reward_dist'] = rewards.cpu().numpy()
         wandb.log(logs)
 
-        if (epoch+1) % 2000 == 0:
+        if k % 2000 == 0:
             # print("EPOCH: ", epoch)
             # HF push_to_hub:
             policy.push_to_hub("SophieTr/"+RUN_NAME)
             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
             # Save checkpoint (TOBE DONE)
-            checkpoint = {'state_dict': policy.state_dict(), 'epoch': epoch,}
+            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
             torch.save( checkpoint, CHECKPOINT_PATH )
             wandb.save(CHECKPOINT_PATH)
 
