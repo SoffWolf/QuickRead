@@ -1,6 +1,7 @@
 import torch
 import os
-
+import sys
+sys.path.insert(0,'..')
 # from datasets import load_dataset, load_from_disk
 
 from transformers import PegasusTokenizer, PegasusForConditionalGeneration
