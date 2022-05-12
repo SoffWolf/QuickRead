@@ -27,35 +27,27 @@ policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=to
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
 # train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 test_data = """
-    A driver was shocked to receive a £50 fine for failing to display his tax disc - despite it not becoming a legal requirement six months ago.
+    Wayne Rooney cut a forlorn figure after being spotted filling up his £100,000 Overfinch Range Rover, just a couple of days after his side’s loss to Chelsea - despite having 70 per cent possession.
 
-Phil Haste, 60, was also told he had not shown a pay and display ticket in his car, even though he has a valid car parking permit on his dashboard.
+A solitary Eden Hazard strike in the first half was enough for Jose Mourinho’s side, who showed how to ‘park the bus’ with a terrific defensive display as Manchester United struggled to break them down and create any clear-cut chances.
 
-The businessman is now refusing to pay the fine that was issued in a Torbay council car park.
+Rooney didn’t look best pleased with the photographer as he scowled at his picture being taken.
 
-Scroll down for video
+Wayne Rooney doesn’t look best pleased after being spotted filling up his £100,000 Range Rover
 
-’Diabolical’: Phil Haste (left) said he could not understand why he was issued with a penalty notice, as he clearly had a valid parking permit in his car and no longer required his tax disc to be shown
+The England captain was disappointed with the result on Saturday but thought his side deserved to get something from the game.
 
-Mr Haste sent his appeal to the council on Saturday after being issued with the ticket last month and said it was a ‘diabolical’ decision to fine him.
+He said: ‘In terms of the way we moved the Chelsea players about, making them work, it was excellent.
 
-The government abolished paper tax discs on October 1 last year, meaning they no longer need to be shown on a vehicle windscreen.
+’Over the last few months it has all started to click and the players understand what the manager wants. That’s showing in the performances.
 
-Mr Haste, who lives in Torquay, said: ‘I would rather go to court than pay the fine. Issuing tickets of this ilk show they haven’t got a clue what they are talking about.
+’I’ve rarely seen a team come to Stamford Bridge and dominate so much. All that was missing was the goal.’
 
-’It’s diabolical. The council employ these people to do a job for them and it’s clearly not being presented clearly.
+The 29-year-old looked glum just a couple of days after his side’s loss to Chelsea in the Premier League
 
-’They are obviously trying to just grab money where they can. I don’t understand why I got this fine.’
+The England captain was seen here driving his £100,000 Overfinch Range Rover to training at Carrington
 
-’Haven’t got a clue’: The 60-year-old was also told he had not shown a pay and display ticket in his car, even though he has a valid car parking permit on his dashboard (pictured)
-
-The 60-year-old, who owns the yacht brokers’ Quayside Marine, added: ‘I don’t need a tax disc so I don’t know why they issued this.
-
-’I have a car parking permit which was clearly on display on the dashboard of my car, so I just can’t understand it.’
-
-Torbay Council said it was not their policy to issue fines for road tax offences and urged Mr Haste to appeal.
-
-A spokesman said: ‘We do not issue parking penalty charge notices with regard to road tax and Mr Haste will have been advised on how to appeal against this ticket as it is stated on the reverse of the penalty charge notice.’
+Rooney was played in a deeper role against Chelsea but was unable to help his side claim any points
 """
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
