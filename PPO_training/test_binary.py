@@ -27,20 +27,17 @@ policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=to
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
 # train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 test_data = """
-    Finland continues to move towards membership of NATO. Ukrainian President Volodymyr Zelensky said he commends Finland’s "readiness" to join NATO, while the Kremlin said it would see Finland's accession to the military alliance as a threat.
+I'm currently a junior doctor in my first few weeks on an Emergency Department rotation.
 
-On the ground, all the civilians are believed to have been evacuated from Mariupol’s Azovstal steel plant.
+Today a teenage girl came in having fallen off her skateboard, cutting open her forehead. Normal procedure would either be for a doctor to apply sutures, or a nurse / medical technician with experience in gluing to effectively use what is superglue to seal the skin together - of course neither were available on my shift during one of the busiest parts of the day.
 
-Here are the latest updates from Russia’s invasion of Ukraine:
+I would have been more comfortable suturing the laceration given we were actually taught how to do this at medical school. Gluing - not so much. My superior advised me not to suture the laceration as I haven't done any suturing for a while, and given that the laceration was on the face, to either wait for someone with more experience to do it, or glue it with care and attention.
 
-Finland’s NATO membership: Finland's leaders announced in a joint statement on Thursday that they are in favor of applying for NATO membership, moving the Nordic nation closer to joining the alliance. Since the Russian invasion of Ukraine, public support for joining NATO in Finland, which shares an 800-mile border with Russia, has leaped from around 30% to nearly 80% in some polls.
+The patient had of course already been waiting hours to see a doctor and absolutely did not want to wait any longer. Being the absolute hero I am, I decided to give gluing a go. I wondered how hard it could actually be given I'm more than proficient in supergluing the soles of my trainers together when they fall apart on a weekly basis.
 
-Sweden could be next: It is also expected that Sweden, Finland’s neighbor to the west, will soon announce its intention to join NATO. Sweden's foreign minister said Thursday that the country will "take Finland’s assessments into account." Russia has warned both countries against joining the alliance, saying there would be consequences.
+The choice of glue is cyanoacrylate - a glue that I am told by another equally bold junior doctor would not be able to glue surfaces other than skin together, and therefore perfectly safe to use copious amounts of. I tested this theory out by applying glue to my gloved index finger and thumb, and trying to glue them together. Nothing happened - my finger and thumb came apart as if I was using water.
 
-Support for Finland: NATO chief Jens Stoltenberg said Finland would be "warmly welcomed" into the alliance. Meanwhile, NATO members Denmark and Estonia said they would support Finland’s membership, with Danish Prime Minister Mette Frederiksen saying it "will strengthen NATO and our common security."
-
-Moscow's reaction: Kremlin spokesman Dmitry Peskov said Thursday that Russia would see Finland's accession to the NATO as a threat and the move would not contribute to more security. Russia will analyze the situation with Finland's entry to NATO and will work out the necessary measures to ensure its own security, he added.
-"""
+So on I went and started to apply glue to this young girl's forehead whilst holding the skin together tightly. Only it turns out that actually any surface with moisture on it is enough to activate the cyanoacrylate, and the moisture in skin is what causes it to stick together. When I tested out the glue on the gloves earlier, I had just applied new dry gloves, so there was nothing to activate the glue, and now the gloves were likely covered in blood and moisture from manipulating the laceration into position and were a fully bondable surface."""
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
 resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
