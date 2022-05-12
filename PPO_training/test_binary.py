@@ -21,7 +21,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 
 # Policy
 policy = PegasusWithValueHead(supervised_baseline)
-policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH)), strict=False)
+policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH)), strict=False, map_location=torch.device('cpu'))
 
 # Data
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
