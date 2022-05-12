@@ -10,7 +10,9 @@ from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
 from rewards.reward_model import RewardModel
 
+from huggingface_hub import HfApi, create_repo, Repository
 
+create_repo("QuickRead/PP0_rm_v1_full", repo_type="model")
 
 RUN_NAME = "PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
@@ -23,9 +25,9 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 policy = PegasusWithValueHead(supervised_baseline)
 policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=torch.device('cpu')), strict=False)
 
-# Data
-# dataset = load_from_disk("../../../QuickRead/reddit_clean")
-# train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
+# Upload to HuggingFace hub
+with Repository("ppo-model", clone_from="QuickRead/PP0_rm_v1_full", use_auth_token=True).commit(commit_message="PPO demo model :)"):
+    torch.save(policy.state_dict(), "model.pt")
 test_data = """
 I'm currently a junior doctor in my first few weeks on an Emergency Department rotation.
 
@@ -37,8 +39,18 @@ The patient had of course already been waiting hours to see a doctor and absolut
 
 The choice of glue is cyanoacrylate - a glue that I am told by another equally bold junior doctor would not be able to glue surfaces other than skin together, and therefore perfectly safe to use copious amounts of. I tested this theory out by applying glue to my gloved index finger and thumb, and trying to glue them together. Nothing happened - my finger and thumb came apart as if I was using water.
 
-So on I went and started to apply glue to this young girl's forehead whilst holding the skin together tightly. Only it turns out that actually any surface with moisture on it is enough to activate the cyanoacrylate, and the moisture in skin is what causes it to stick together. When I tested out the glue on the gloves earlier, I had just applied new dry gloves, so there was nothing to activate the glue, and now the gloves were likely covered in blood and moisture from manipulating the laceration into position and were a fully bondable surface."""
+So on I went and started to apply glue to this young girl's forehead whilst holding the skin together tightly. Only it turns out that actually any surface with moisture on it is enough to activate the cyanoacrylate, and the moisture in skin is what causes it to stick together. When I tested out the glue on the gloves earlier, I had just applied new dry gloves, so there was nothing to activate the glue, and now the gloves were likely covered in blood and moisture from manipulating the laceration into position and were a fully bondable surface.
+
+"""
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
 resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 print(f'RESPONSE from test_data is:\n {resp_txt}')
+
+# Push to hub
+api = HfApi()
+api.create_repo(
+            repo_id = "dummy", # The name of our repository, by default under your user
+            private = False, # Whether the repo should be public or private
+            repo_type = "model" # The type of repository, such as "model", "space", "dataset"
+            )
