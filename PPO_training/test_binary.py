@@ -27,49 +27,35 @@ policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=to
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
 # train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 test_data = """
-    Rain, wind and a bone-chilling cold confronted all the runners of Monday’s Boston Marathon.
+    A driver was shocked to receive a £50 fine for failing to display his tax disc - despite it not becoming a legal requirement six months ago.
 
-    But after 20 grueling hours on the course, Maickel Melamed overcame another obstacle - a rare form of muscular dystrophy that makes it hard for him to just walk or move - to finally cross the finish line.
+Phil Haste, 60, was also told he had not shown a pay and display ticket in his car, even though he has a valid car parking permit on his dashboard.
 
-    Melamed, 39, may have come in last place in the 26.2-mile race, but his story touched a city now famous for its own iron-clad will after the Boston Marathon bombings in 2013.
+The businessman is now refusing to pay the fine that was issued in a Torbay council car park.
 
-    Scroll down for video
+Scroll down for video
 
-    Maickel Melamed, 39, crossed the Boston Marathon finish line after 20 grueling hours in the rain and cold
+’Diabolical’: Phil Haste (left) said he could not understand why he was issued with a penalty notice, as he clearly had a valid parking permit in his car and no longer required his tax disc to be shown
 
-    Melamed has a rare form of muscular dystrophy that makes it hard just to move or walk, but he didn’t let that stop him from finishing his fifth marathon at 5am Tuesday morning
+Mr Haste sent his appeal to the council on Saturday after being issued with the ticket last month and said it was a ‘diabolical’ decision to fine him.
 
-    ’After 20 hours of rain, wind and cold, Boston is still strong,’ the Venezuelan athlete said on Tuesday as he was honored at City Hall.
+The government abolished paper tax discs on October 1 last year, meaning they no longer need to be shown on a vehicle windscreen.
 
-    ’The whole city has been so helpful and loving. The message here is that love is so much stronger than death. It was an honor to run the streets of this city.’
+Mr Haste, who lives in Torquay, said: ‘I would rather go to court than pay the fine. Issuing tickets of this ilk show they haven’t got a clue what they are talking about.
 
-    Melamed walked the race with Vamos, a volunteer team from Caracas, as well as his physical trainers and dozens of friends and supporters who were there to watch him finish the race at 5am Tuesday morning.
+’It’s diabolical. The council employ these people to do a job for them and it’s clearly not being presented clearly.
 
-    The athlete, who has completed four other marathons, said Boston’s hilly track became especially tough around mile 24, but his physical trainers found a way to keep him going.
+’They are obviously trying to just grab money where they can. I don’t understand why I got this fine.’
 
-    ’I’d rest 10 seconds, then take four to six steps,’ Melamed said. ‘It was a real exciting way to finish.’
+’Haven’t got a clue’: The 60-year-old was also told he had not shown a pay and display ticket in his car, even though he has a valid car parking permit on his dashboard (pictured)
 
-    When Melamed needed to rest, collapsing into his group’s arms, they would push him back up and count his every step, according to CBS Boston.
+The 60-year-old, who owns the yacht brokers’ Quayside Marine, added: ‘I don’t need a tax disc so I don’t know why they issued this.
 
-    The athlete, who has completed four other marathons, said Boston’s hilly track became especially tough around mile 24, but his physical trainers found a way to keep him going
+’I have a car parking permit which was clearly on display on the dashboard of my car, so I just can’t understand it.’
 
-    Boston Mayor Marty Walsh presented a medal to Melamed and called his story ‘truly one of inspiration’
+Torbay Council said it was not their policy to issue fines for road tax offences and urged Mr Haste to appeal.
 
-    And as the inspirational athlete inched closer and closer to the finish line, his supporters were cheering him on and yelling ‘Si se puede, si se puede!’, which is Spanish for ‘yes, we can!’
-
-    It was Melamed’s desire to prove to others that they could achieve their dreams that kept him going.
-
-    ’You have to know why you’re doing it, because in the last mile, the marathon will ask you if you have a reason, and if you don’t have it, you will quit,’ he told MassLive.com.
-
-    ’Raise the bar of your own expectations for yourself. Human power is infinite.’
-
-    There was a special reason why Melamed, who has completed races in Chicago, New York, Berlin and Tokyo, decided Boston would be the location of his last marathon.
-
-    It was at Boston Children’s Hospital that Melamed, who was only given seven days to live when he was born, had a life-saving operation.
-
-    Now the athlete, who has also parachuted, paraglided and climbed Venezuela’s highest mountain, must retire his running shoes because of the races’ physical toll.
-
-    But his story, which Boston Mayor Marty Walsh called ‘truly one of inspiration,’ will continue racing on.
+A spokesman said: ‘We do not issue parking penalty charge notices with regard to road tax and Mr Haste will have been advised on how to appeal against this ticket as it is stated on the reverse of the penalty charge notice.’
 """
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
