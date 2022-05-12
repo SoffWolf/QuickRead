@@ -181,15 +181,16 @@ for epoch in range(1):
 #         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
 
-        if k % 500 == 0:
-#             print("k = 50")
-#             # print("EPOCH: ", epoch)
+        if (k+1) % 500 == 0:
+            print("EPOCH: ", epoch)
+            torch.mean(rewards).cpu().numpy()
 #             # HF push_to_hub:
 #             policy.push_to_hub("SophieTr/"+RUN_NAME)
 #             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
 #             # Save checkpoint (TOBE DONE)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
             torch.save( checkpoint, CHECKPOINT_PATH )
+
 #             # wandb.save(CHECKPOINT_PATH)
 
         
