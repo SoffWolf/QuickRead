@@ -12,7 +12,7 @@ from rewards.reward_model import RewardModel
 
 from huggingface_hub import HfApi, create_repo, Repository
 
-create_repo("QuickRead/PP0_rm_v1_full", repo_type="model")
+create_repo("QuickRead/PP0_rm_v1_full")
 
 RUN_NAME = "PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
