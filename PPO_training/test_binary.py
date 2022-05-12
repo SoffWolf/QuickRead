@@ -27,27 +27,19 @@ policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=to
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
 # train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
 test_data = """
-    Wayne Rooney cut a forlorn figure after being spotted filling up his £100,000 Overfinch Range Rover, just a couple of days after his side’s loss to Chelsea - despite having 70 per cent possession.
+    Finland continues to move towards membership of NATO. Ukrainian President Volodymyr Zelensky said he commends Finland’s "readiness" to join NATO, while the Kremlin said it would see Finland's accession to the military alliance as a threat.
 
-A solitary Eden Hazard strike in the first half was enough for Jose Mourinho’s side, who showed how to ‘park the bus’ with a terrific defensive display as Manchester United struggled to break them down and create any clear-cut chances.
+On the ground, all the civilians are believed to have been evacuated from Mariupol’s Azovstal steel plant.
 
-Rooney didn’t look best pleased with the photographer as he scowled at his picture being taken.
+Here are the latest updates from Russia’s invasion of Ukraine:
 
-Wayne Rooney doesn’t look best pleased after being spotted filling up his £100,000 Range Rover
+Finland’s NATO membership: Finland's leaders announced in a joint statement on Thursday that they are in favor of applying for NATO membership, moving the Nordic nation closer to joining the alliance. Since the Russian invasion of Ukraine, public support for joining NATO in Finland, which shares an 800-mile border with Russia, has leaped from around 30% to nearly 80% in some polls.
 
-The England captain was disappointed with the result on Saturday but thought his side deserved to get something from the game.
+Sweden could be next: It is also expected that Sweden, Finland’s neighbor to the west, will soon announce its intention to join NATO. Sweden's foreign minister said Thursday that the country will "take Finland’s assessments into account." Russia has warned both countries against joining the alliance, saying there would be consequences.
 
-He said: ‘In terms of the way we moved the Chelsea players about, making them work, it was excellent.
+Support for Finland: NATO chief Jens Stoltenberg said Finland would be "warmly welcomed" into the alliance. Meanwhile, NATO members Denmark and Estonia said they would support Finland’s membership, with Danish Prime Minister Mette Frederiksen saying it "will strengthen NATO and our common security."
 
-’Over the last few months it has all started to click and the players understand what the manager wants. That’s showing in the performances.
-
-’I’ve rarely seen a team come to Stamford Bridge and dominate so much. All that was missing was the goal.’
-
-The 29-year-old looked glum just a couple of days after his side’s loss to Chelsea in the Premier League
-
-The England captain was seen here driving his £100,000 Overfinch Range Rover to training at Carrington
-
-Rooney was played in a deeper role against Chelsea but was unable to help his side claim any points
+Moscow's reaction: Kremlin spokesman Dmitry Peskov said Thursday that Russia would see Finland's accession to the NATO as a threat and the move would not contribute to more security. Russia will analyze the situation with Finland's entry to NATO and will work out the necessary measures to ensure its own security, he added.
 """
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
