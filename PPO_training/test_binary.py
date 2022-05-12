@@ -11,27 +11,6 @@ from ppo import PPOTrainer
 from rewards.reward_model import RewardModel
 
 
-config = {
-    "lm_name": "QuickRead/pegasus-reddit-7e05",   # policy: supervised baseline
-    "ref_lm_name": "QuickRead/pegasus-reddit-7e05",   # find out about the ref model
-    "cls_model_name": "SophieTr/RM_incr_lr_v1",   # reward model
-    "tk_name": "QuickRead/pegasus-reddit-7e05",    # tokenizer name
-    "steps": 25600,
-    "batch_size": 8,
-    "forward_batch_size":1,
-    "ppo_epochs": 1,   
-    "txt_in_len": 5,
-    "txt_out_len": 15,
-    "lr": 1.41e-5,          # check this in the paper
-    "init_kl_coef":0.2,     # check this in the paper
-    "target": 6,
-    "horizon":10000,
-    "gamma":1,              # also check these in the paper
-    "lam":0.95,
-    "cliprange": .2,
-    "cliprange_value":.2,
-    "vf_coef":.1, 
-}
 
 RUN_NAME = "PP0_rm_v1"
 PATH = "./" + RUN_NAME
@@ -40,12 +19,9 @@ CHECKPOINT_PATH = os.path.join(PATH, 'epoch-16.pth') #'latest_minibatch.pth')
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 
-# Policy model
+# Policy
 policy = PegasusWithValueHead(supervised_baseline)
-policy_ref = PegasusWithValueHead(supervised_baseline)
-
-ppo_trainer = PPOTrainer(policy, policy_ref, **config)
-ppo_trainer.load_state_dict(torch.load(os.path.join(RM_PATH)), strict=False)
+policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH)), strict=False)
 
 # Data
 # dataset = load_from_disk("../../../QuickRead/reddit_clean")
