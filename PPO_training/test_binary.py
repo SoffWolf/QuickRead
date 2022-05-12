@@ -7,6 +7,8 @@ from transformers import PegasusTokenizer, PegasusForConditionalGeneration
 
 from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
+from rewards.reward_model import RewardModel
+
 
 config = {
     "lm_name": "QuickRead/pegasus-reddit-7e05",   # policy: supervised baseline
