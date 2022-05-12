@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_v6_nolog"
+RUN_NAME = "PPO_v5_nolog"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -109,7 +109,7 @@ else:
 # n_except = 0
 # error_lst = []
 for epoch in range(1):
-    sample = df # shuffle(df)
+    sample = shuffle(df)
     if len(sample) != df.shape[0]:
         break
     #print(len(sample[0]), df.shape[0][0])
@@ -141,10 +141,6 @@ for epoch in range(1):
                     resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
                     print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}')
-            # print(summary(reward_model))
-            # print(f'\tquery ("{i}"): \n\t{query.shape}')
-            # print(f'\tresponse ("{i}"): \n\t{response.shape}')
-            
             reward_model.eval()
             with torch.no_grad():
                 reward = reward_model(query, response).detach()
@@ -181,8 +177,7 @@ for epoch in range(1):
 #         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
 
-        if (k+1) % 500 == 0:
-            print("EPOCH: ", epoch)
+        if (k+1) % 50 == 0:
             print(torch.mean(rewards).cpu().numpy())
 #             # HF push_to_hub:
 #             policy.push_to_hub("SophieTr/"+RUN_NAME)
@@ -199,16 +194,4 @@ for epoch in range(1):
 # tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
 
 checkpoint = {'state_dict': policy.state_dict()}
-#torch.save(checkpoint, os.path.join("./result/test.pth"))
 torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
-# with open('err_query_response.txt', 'w') as f:
-#     i = 0
-#     for (q, r) in error_lst:
-#         f.write("Error " + i)
-# 	f.write(q)
-#         f.write('\n')
-# 	f.write(r)
-# 	f.write('--.--'*100)
-# 	f.write('\n')
-# 	i+=1
-# print("Error lst: ", error_lst)

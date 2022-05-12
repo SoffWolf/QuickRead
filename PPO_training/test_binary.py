@@ -46,11 +46,3 @@ query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt')
 response = policy.generate(query) # will not produce text
 resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 print(f'RESPONSE from test_data is:\n {resp_txt}')
-
-# Push to hub
-api = HfApi()
-api.create_repo(
-            repo_id = "dummy", # The name of our repository, by default under your user
-            private = False, # Whether the repo should be public or private
-            repo_type = "model" # The type of repository, such as "model", "space", "dataset"
-            )
