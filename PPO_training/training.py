@@ -183,7 +183,7 @@ for epoch in range(1):
 
         if (k+1) % 500 == 0:
             print("EPOCH: ", epoch)
-            torch.mean(rewards).cpu().numpy()
+            print(torch.mean(rewards).cpu().numpy())
 #             # HF push_to_hub:
 #             policy.push_to_hub("SophieTr/"+RUN_NAME)
 #             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
