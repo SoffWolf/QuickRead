@@ -12,9 +12,9 @@ from rewards.reward_model import RewardModel
 
 
 
-RUN_NAME = "PP0_rm_v1"
+RUN_NAME = "ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
-CHECKPOINT_PATH = os.path.join(PATH, 'epoch-16.pth') #'latest_minibatch.pth')
+CHECKPOINT_PATH = os.path.join(PATH, 'epoch-8.pth')#'epoch-16.pth') #'latest_minibatch.pth')
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
