@@ -1,5 +1,5 @@
 import torch
-import wandb
+# import wandb
 import time
 import os
 from tqdm import tqdm
@@ -51,7 +51,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth')
 group = "quickread"
 project = "PPO-training"
 display_name = RUN_NAME
-wandb.init(entity=group, project=project, name=display_name, config=config)
+# wandb.init(entity=group, project=project, name=display_name, config=config)
 
 # load supervised baseline
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -69,7 +69,7 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 # save_directory = RUN_NAME
 # policy.save(save_directory, True, "QuickRead")
 # Wandb
-wandb.watch(policy, log='all')
+# wandb.watch(policy, log='all')
 
 # Put all the model to cuda, if possible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -115,7 +115,8 @@ for epoch in range(1):
     #print(len(sample[0]), df.shape[0][0])
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
-    for k in tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(int(np.ceil(len(sample) / config["batch_size"]))): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+        print("k: ", k)
         query_batch = sample[k:k+config["batch_size"]]
         logs = dict()
         timing = dict()
@@ -178,9 +179,10 @@ for epoch in range(1):
         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
         logs['env/reward_dist'] = rewards.cpu().numpy()
-        wandb.log(logs)
+        # wandb.log(logs)
 
-        if k % 500 == 0:
+        if k % 50 == 0:
+            print("k = 50")
             # print("EPOCH: ", epoch)
             # HF push_to_hub:
             policy.push_to_hub("SophieTr/"+RUN_NAME)
@@ -188,7 +190,7 @@ for epoch in range(1):
             # Save checkpoint (TOBE DONE)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
             torch.save( checkpoint, CHECKPOINT_PATH )
-            wandb.save(CHECKPOINT_PATH)
+            # wandb.save(CHECKPOINT_PATH)
 
         
 # HF push_to_hub:
