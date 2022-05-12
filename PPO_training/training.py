@@ -174,28 +174,28 @@ for epoch in range(1):
 
         #### Log everything
         timing['time/mini_batch'] = time.time()-t0
-        logs.update(timing)
-        logs.update(stats)
-        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-        logs['env/reward_dist'] = rewards.cpu().numpy()
+#         logs.update(timing)
+#         logs.update(stats)
+#         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
+#         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
+#         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
 
-        if k % 50 == 0:
-            print("k = 50")
-            # print("EPOCH: ", epoch)
-            # HF push_to_hub:
-            policy.push_to_hub("SophieTr/"+RUN_NAME)
-            tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-            # Save checkpoint (TOBE DONE)
+        if k % 500 == 0:
+#             print("k = 50")
+#             # print("EPOCH: ", epoch)
+#             # HF push_to_hub:
+#             policy.push_to_hub("SophieTr/"+RUN_NAME)
+#             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+#             # Save checkpoint (TOBE DONE)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
             torch.save( checkpoint, CHECKPOINT_PATH )
-            # wandb.save(CHECKPOINT_PATH)
+#             # wandb.save(CHECKPOINT_PATH)
 
         
 # HF push_to_hub:
-policy.push_to_hub("SophieTr/"+RUN_NAME)
-tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
+# policy.push_to_hub("SophieTr/"+RUN_NAME)
+# tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
 
 checkpoint = {'state_dict': policy.state_dict()}
 #torch.save(checkpoint, os.path.join("./result/test.pth"))
