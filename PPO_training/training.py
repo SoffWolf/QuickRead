@@ -117,7 +117,7 @@ for epoch in range(1):
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
     for k in range(64,8):
-    #for k in range(int(np.ceil(len(sample) / config["batch_size"])),8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    #for k in range(int(np.ceil(len(sample)))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
         print("k: ", k, flush=True)
         if (k+1) % 50 == 0:
             print(torch.mean(rewards).cpu().numpy(), flush=True)

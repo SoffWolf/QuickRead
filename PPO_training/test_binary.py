@@ -12,7 +12,7 @@ from rewards.reward_model import RewardModel
 
 from huggingface_hub import HfApi, create_repo, Repository
 
-create_repo("QuickRead/PP0_rm_v1_full")
+# create_repo("QuickRead/PP0_rm_v1_full")
 
 RUN_NAME = "PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
@@ -26,21 +26,35 @@ policy = PegasusWithValueHead(supervised_baseline)
 policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=torch.device('cpu')), strict=False)
 
 # Upload to HuggingFace hub
-with Repository("ppo-model", clone_from="QuickRead/PP0_rm_v1_full", use_auth_token=True).commit(commit_message="PPO demo model :)"):
-    torch.save(policy.state_dict(), "model.pt")
+# with Repository("ppo-model", clone_from="QuickRead/PP0_rm_v1_full", use_auth_token=True).commit(commit_message="PPO demo model :)"):
+#     torch.save(policy.state_dict(), "model.pt")
 test_data = """
-I'm currently a junior doctor in my first few weeks on an Emergency Department rotation.
-
-Today a teenage girl came in having fallen off her skateboard, cutting open her forehead. Normal procedure would either be for a doctor to apply sutures, or a nurse / medical technician with experience in gluing to effectively use what is superglue to seal the skin together - of course neither were available on my shift during one of the busiest parts of the day.
-
-I would have been more comfortable suturing the laceration given we were actually taught how to do this at medical school. Gluing - not so much. My superior advised me not to suture the laceration as I haven't done any suturing for a while, and given that the laceration was on the face, to either wait for someone with more experience to do it, or glue it with care and attention.
-
-The patient had of course already been waiting hours to see a doctor and absolutely did not want to wait any longer. Being the absolute hero I am, I decided to give gluing a go. I wondered how hard it could actually be given I'm more than proficient in supergluing the soles of my trainers together when they fall apart on a weekly basis.
-
-The choice of glue is cyanoacrylate - a glue that I am told by another equally bold junior doctor would not be able to glue surfaces other than skin together, and therefore perfectly safe to use copious amounts of. I tested this theory out by applying glue to my gloved index finger and thumb, and trying to glue them together. Nothing happened - my finger and thumb came apart as if I was using water.
-
-So on I went and started to apply glue to this young girl's forehead whilst holding the skin together tightly. Only it turns out that actually any surface with moisture on it is enough to activate the cyanoacrylate, and the moisture in skin is what causes it to stick together. When I tested out the glue on the gloves earlier, I had just applied new dry gloves, so there was nothing to activate the glue, and now the gloves were likely covered in blood and moisture from manipulating the laceration into position and were a fully bondable surface.
-
+As is customary with treatments of relational database management, we may use
+the terms “database” and “relation” with two meanings: on the one hand, a logical
+database (resp. a relation) may mean a database value (resp. relation value), that
+is, some fixed contents of the database (resp. relation) as a bag of tuples, and on
+the other hand, it may mean a database variable (resp. relation variable), that is,
+a variable that can take a database (resp. relation) as its value. The context should
+make it clear which of the two meanings is assumed. Sometimes, when we wish to
+emphasize the distinction between the two meanings, we may talk about database
+states when referring to database values.
+For each logical database and for each of its relations, considered with the latter
+meaning (as a variable), there is a set of associated integrity constraints, which
+have been specified at the time of creating the database or relation (with the SQL
+create table statement) or added afterwards (with the SQL alter table statement).
+An integrity constraint may be internal to a single relation such as a key constraint
+(primary key, unique) or it may span over two relations such as a referential
+integrity constraint (foreign key).
+Integrity constraints restrict the values that the database and relation variables are
+allowed to take. A logical database (i.e., its state) is integral or consistent if it fulfills
+the integrity constraints specified for the database.
+An attempt to perform an update action that violates an integrity constraint
+specified by SQL on the database either returns with an error indication, or triggers
+a sequence of corrective actions so as to make the violated constraint to hold
+again if such corrective actions have been specified. In addition to constraints
+that can be specified by SQL create table and alter table statements, the logical
+database usually satisfies some application-specific constraints. Applications using
+the database must check for these and keep them satisfied.
 """
 query = tokenizer(test_data, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text
