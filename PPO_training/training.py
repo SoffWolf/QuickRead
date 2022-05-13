@@ -111,12 +111,20 @@ else:
 for epoch in range(1):
     sample = shuffle(df)
     if len(sample) != df.shape[0]:
+        print("IN BREAK", flush=True)
         break
     #print(len(sample[0]), df.shape[0][0])
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
-    for k in range(int(np.ceil(len(sample) / config["batch_size"]))): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
-        print("k: ", k)
+    for k in range(64):
+    #for k in range(int(np.ceil(len(sample) / config["batch_size"]))): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+        print("k: ", k, flush=True)
+        if (k+1) % 50 == 0:
+            print(torch.mean(rewards).cpu().numpy(), flush=True)
+#             # Save checkpoint (TOBE DONE)
+            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
+            torch.save( checkpoint, CHECKPOINT_PATH )
+
         query_batch = sample[k:k+config["batch_size"]]
         logs = dict()
         timing = dict()
@@ -140,7 +148,7 @@ for epoch in range(1):
                 if k == 0 or k%500 == 0:
                     resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
-                    print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}')
+                    print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
             reward_model.eval()
             with torch.no_grad():
                 reward = reward_model(query, response).detach()
@@ -177,14 +185,11 @@ for epoch in range(1):
 #         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
 
-        if (k+1) % 50 == 0:
-            print(torch.mean(rewards).cpu().numpy())
-#             # HF push_to_hub:
-#             policy.push_to_hub("SophieTr/"+RUN_NAME)
-#             tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-#             # Save checkpoint (TOBE DONE)
-            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
-            torch.save( checkpoint, CHECKPOINT_PATH )
+#         if (k+1) % 50 == 0:
+#             print(torch.mean(rewards).cpu().numpy(), flush=True)
+# #             # Save checkpoint (TOBE DONE)
+#             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
+#             torch.save( checkpoint, CHECKPOINT_PATH )
 
 #             # wandb.save(CHECKPOINT_PATH)
 
