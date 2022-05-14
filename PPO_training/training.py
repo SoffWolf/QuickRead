@@ -119,7 +119,7 @@ for epoch in range(1):
     for k in range(64,8):
     #for k in range(int(np.ceil(len(sample)))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
         print("k: ", k, flush=True)
-        if (k+1) % 50 == 0:
+        if (k+1)  == 24:
             print(torch.mean(rewards).cpu().numpy(), flush=True)
 #             # Save checkpoint (TOBE DONE)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
