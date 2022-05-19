@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_v7_1/10"
+RUN_NAME = "PPO_v7_all"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -114,7 +114,7 @@ for epoch in range(1):
         print("IN BREAK", flush=True)
         break
     torch.cuda.empty_cache()
-    for k in range(0, int(np.ceil(len(sample)/10))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(0, int(np.ceil(len(sample)))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
 
         query_batch = sample[k:k+config["batch_size"]]
         logs = dict()
@@ -175,7 +175,7 @@ for epoch in range(1):
 #         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
 #         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
-        if (k% 500)  == 24:
+        if (k% 800)  == 0:
             print(torch.mean(rewards).cpu().numpy(), flush=True)
             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
             torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch-{}.pth'.format(k+1)) )
