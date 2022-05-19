@@ -48,9 +48,9 @@ The news initially sent Twitter shares down more than 20% in premarket trading b
 
 In his tweet about putting the deal on hold, Musk linked to a May 2 Reuters report about Twitter's most recent disclosure about its spam and fake account problem.
 
-In its quarterly financial report, released on April 28, Twitter estimated that fake or spam accounts made up fewer than 5% of the platform's active users during the first three months of the year. Twitter noted that the estimates were based on a review of sample accounts and it believed the numbers to be "reasonable."
 But it acknowledged that the measurements were not independently verified and the actual number of fake or spam accounts could be higher.
-Twitter has had a spam problem for years, and the company has previously acknowledged that reducing fake and malicious accounts would play a key factor in its ability to keep growing. It's unclear why Musk would back away from the deal because of the latest disclosure.
+Twitter has had a spam problem for years, and the company has previously acknowledged that reducing fakeIn its quarterly financial report, released on April 28, Twitter estimated that fake or spam accounts made up fewer than 5% of the platform's active users during the first three months of the year. Twitter noted that the estimates were based on a review of sample accounts and it believed the numbers to be "reasonable."
+ and malicious accounts would play a key factor in its ability to keep growing. It's unclear why Musk would back away from the deal because of the latest disclosure.
 """
 query = tokenizer(test_data_news, padding=True, truncation=True, return_tensors='pt').input_ids
 response = policy.generate(query) # will not produce text

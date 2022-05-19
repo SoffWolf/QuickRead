@@ -116,14 +116,13 @@ for epoch in range(1):
     #print(len(sample[0]), df.shape[0][0])
 #for epoch in tqdm(range(int(np.ceil(len(train_texts) / config["batch_size"]))))::
     # torch.cuda.empty_cache()
-    for k in range(64,8):
-    #for k in range(int(np.ceil(len(sample)))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(0, 64,8):
+    #for k in range(0, int(np.ceil(len(sample)))-8,8): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
         print("k: ", k, flush=True)
         if (k+1)  == 24:
             print(torch.mean(rewards).cpu().numpy(), flush=True)
-#             # Save checkpoint (TOBE DONE)
-            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
-            torch.save( checkpoint, CHECKPOINT_PATH )
+            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
+            torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch-{}.pth'.format(k+1)) )
 
         query_batch = sample[k:k+config["batch_size"]]
         logs = dict()
