@@ -88,6 +88,9 @@ for i in range(0, len(out)+1, 10):
     df = df.append(df2, ignore_index = True)
 
 
+for column in df:
+    print(column.mean())
+
 df.to_csv(SAVEPATH,index=False)
 
 
