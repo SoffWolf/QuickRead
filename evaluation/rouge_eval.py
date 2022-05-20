@@ -10,7 +10,7 @@ from pathlib import Path
 
 SAVEPATH = Path('out.csv') 
 
-DATAPATH = 'data/human_feedback.parquet'
+DATAPATH = '../rewards/data/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
 
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
