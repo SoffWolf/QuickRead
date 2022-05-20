@@ -10,14 +10,14 @@ from pathlib import Path
 
 SAVEPATH = Path('out.csv') 
 
-DATAPATH = '/content/human_feedback.parquet'
+DATAPATH = '../rewards/data/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
 n_sample = 10
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-input_posts = list(df_test['post'][:20].values)
-label_summaries_1 = list(df_test['summary1'][:20].values)
-label_summaries_2 = list(df_test['summary2'][:20].values)
+input_posts = list(df_test['post'].values)
+label_summaries_1 = list(df_test['summary1'].values)
+label_summaries_2 = list(df_test['summary2'].values)
 
 model_name = "QuickRead/pegasus-reddit-7e05"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -43,14 +43,14 @@ def get_embedding(sentences):
 # TODO: Add logic: if file model_generated.pyarrow not existed: run the prediction and save result to file --> else: load prediction
 out = []
 for post in input_posts:
-  print(post)
-  print("++++"*4)
+#   print(post)
+#   print("++++"*4)
   tokens = preprocess(post)
   
   response = predict(tokens)
   out.append(response)
-  print(response)
-  print("------------------------------->_<-------------------------------")
+#   print(response)
+#   print("------------------------------->_<-------------------------------")
 
 # calculate the scores here
 # calculate rouge
@@ -92,10 +92,10 @@ for i in range(0, len(out), n_sample):
                         sm1.item(),
                         sm2.item()]
     # df = df.append(df2, ignore_index = True)
-    print(df)
-print("------------------------------->_<-------------------------------")
+    # print(df)
+# print("------------------------------->_<-------------------------------")
 
-print(df)
+# print(df)
 for column in list(df.columns):
     print(df[column].mean())
 
