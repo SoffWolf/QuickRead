@@ -119,10 +119,7 @@ for epoch in range(1):
     # for k in range(0, 64,8):
     for k in tqdm(range(0, int(np.ceil(len(sample)))-8,8)): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
         # print("k: ", k, flush=True)
-        if k%800 == 0:
-            print("Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
-            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
-            torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch-{}.pth'.format(k+1)) )
+        
 
         query_batch = sample[k:k+config["batch_size"]]
         logs = dict()
@@ -183,15 +180,10 @@ for epoch in range(1):
 #         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
 #         logs['env/reward_dist'] = rewards.cpu().numpy()
         # wandb.log(logs)
-
-#         if (k+1) % 50 == 0:
-#             print(torch.mean(rewards).cpu().numpy(), flush=True)
-# #             # Save checkpoint (TOBE DONE)
-#             checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k,}
-#             torch.save( checkpoint, CHECKPOINT_PATH )
-
-#             # wandb.save(CHECKPOINT_PATH)
-
+        if k%800 == 0:
+            print("Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
+            checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
+            torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch-{}.pth'.format(k+1)) )
         
 # HF push_to_hub:
 # policy.push_to_hub("SophieTr/"+RUN_NAME)
