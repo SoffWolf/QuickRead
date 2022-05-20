@@ -12,12 +12,12 @@ SAVEPATH = Path('out.csv')
 
 DATAPATH = '../rewards/data/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
-
+n_sample = 2
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-input_posts = df_test[:10]['post']
-label_summaries_1 = df_test[:10]['summary1']
-label_summaries_2 = df_test[:10]['summary2']
+input_posts = df_test['post'][:n_sample]
+label_summaries_1 = df_test['summary1'][:n_sample]
+label_summaries_2 = df_test['summary2'][:n_sample]
 
 model_name = "QuickRead/pegasus-reddit-7e05"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -35,7 +35,7 @@ def predict(input_ids):
 def get_embedding(sentences):
     s_bert = SentenceTransformer('all-distilroberta-v1')
     # print(model)
-    print("------------------------------->_<-------------------------------")
+    
     embeddings = s_bert.encode(sentences)
     return embeddings
 
@@ -43,9 +43,14 @@ def get_embedding(sentences):
 # TODO: Add logic: if file model_generated.pyarrow not existed: run the prediction and save result to file --> else: load prediction
 out = []
 for post in input_posts:
+  print(post)
+  print("++++"*4)
   tokens = preprocess(post)
+  
   response = predict(tokens)
   out.append(response)
+  print(response)
+  print("------------------------------->_<-------------------------------")
 
 # calculate the scores here
 # calculate rouge
@@ -54,22 +59,22 @@ rouge_2_lst = []
 sm1_lst = []
 sm2_lst = []
 df = pd.DataFrame(columns=[ '1-rouge-1f', '1-rouge-2f', '1-rouge-lf', '2-rouge-1f', '2-rouge-2f', '2-rouge-lf', '1-cosine-sim', '2-cosine-sim'])
-for i in range(0, len(out)+1, 10):
+for i in range(0, len(out)+1, n_sample):
     rouge = Rouge()
-    rouge_score_1 = rouge.get_scores(out[i:i+10], label_summaries_1[i:i+10], avg=True)
-    rouge_score_2 = rouge.get_scores(out[i:i+10], label_summaries_2[i:i+10], avg=True)
+    rouge_score_1 = rouge.get_scores(out[i:i+n_sample], label_summaries_1[i:i+n_sample], avg=True)
+    rouge_score_2 = rouge.get_scores(out[i:i+n_sample], label_summaries_2[i:i+n_sample], avg=True)
 
     #calculate sbert
-    d_out = get_embedding(out[i:i+10])
+    d_out = get_embedding(out[i:i+n_sample])
 
-    d_1 = get_embedding(label_summaries_1[i:i+10])
+    d_1 = get_embedding(label_summaries_1[i:i+n_sample])
     sm1_mat = util.cos_sim(d_1, d_out)
-    sm1 = sum([sm1_mat[k][k] for k in range(10)])/10
+    sm1 = sum([sm1_mat[k][k] for k in range(n_sample)])/n_sample
 
 
-    d_2 = get_embedding(label_summaries_2[i:i+10])
+    d_2 = get_embedding(label_summaries_2[i:i+n_sample])
     sm2_mat = util.cos_sim(d_2, d_out)
-    sm2 = sum([sm2_mat[k][k] for k in range(10)])/10
+    sm2 = sum([sm2_mat[k][k] for k in range(n_sample)])/n_sample
 
     # append that shit
     rouge_1_lst.append(rouge_score_1)
@@ -86,7 +91,7 @@ for i in range(0, len(out)+1, 10):
                         '1-cosine-sim': sm1,
                         '2-cosine-sim': sm2})
     df = df.append(df2, ignore_index = True)
-
+    print(df)
 
 for column in df:
     print(column.mean())
