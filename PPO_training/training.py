@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_v8_test_1stHalf"
+RUN_NAME = "PPO_v8_test_2ndHalf"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -113,8 +113,8 @@ for epoch in range(1):
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    for k in tqdm(range(0, int(np.ceil(len(sample)/2))-config["batch_size"]), config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
-    # for k in tqdm(range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample)))-config["batch_size"]), config["batch_size"]):
+    # for k in tqdm(range(0, int(np.ceil(len(sample)/2))-config["batch_size"]), config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in tqdm(range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample)))-config["batch_size"]), config["batch_size"]):
         # print("k: ", k, flush=True)
         try:
 
@@ -191,7 +191,7 @@ for epoch in range(1):
 # HF push_to_hub:
 # policy.push_to_hub("SophieTr/"+RUN_NAME)
 # tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-file=open('error_1.txt','w')
+file=open('error_2.txt','w')
 for items in error_lst:
     file.writelines(items+'\n')
 file.close()
