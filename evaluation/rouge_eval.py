@@ -10,14 +10,14 @@ from pathlib import Path
 
 SAVEPATH = Path('out.csv') 
 
-DATAPATH = '../rewards/data/human_feedback.parquet'
+DATAPATH = '/content/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
-n_sample = 2
+n_sample = 10
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
-input_posts = df_test['post'][:n_sample]
-label_summaries_1 = df_test['summary1'][:n_sample]
-label_summaries_2 = df_test['summary2'][:n_sample]
+input_posts = list(df_test['post'][:20].values)
+label_summaries_1 = list(df_test['summary1'][:20].values)
+label_summaries_2 = list(df_test['summary2'][:20].values)
 
 model_name = "QuickRead/pegasus-reddit-7e05"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -58,8 +58,9 @@ rouge_1_lst = []
 rouge_2_lst = []
 sm1_lst = []
 sm2_lst = []
-df = pd.DataFrame(columns=[ '1-rouge-1f', '1-rouge-2f', '1-rouge-lf', '2-rouge-1f', '2-rouge-2f', '2-rouge-lf', '1-cosine-sim', '2-cosine-sim'])
-for i in range(0, len(out)+1, n_sample):
+df = pd.DataFrame(columns=[ '1-rouge-1f', '1-rouge-2f', '1-rouge-lf', '2-rouge-1f', '2-rouge-2f', '2-rouge-lf', '1-cosine-sim', '2-cosine-sim'],
+                  index=range(int(np.ceil(len(out)/n_sample))))
+for i in range(0, len(out), n_sample):
     rouge = Rouge()
     rouge_score_1 = rouge.get_scores(out[i:i+n_sample], label_summaries_1[i:i+n_sample], avg=True)
     rouge_score_2 = rouge.get_scores(out[i:i+n_sample], label_summaries_2[i:i+n_sample], avg=True)
@@ -81,20 +82,22 @@ for i in range(0, len(out)+1, n_sample):
     rouge_2_lst.append(rouge_score_2)
     sm1_lst.append(sm1)
     sm2_lst.append(sm2)
-
-    df2 = pd.DataFrame({ '1-rouge-1f': rouge_score_1['rouge-1']['f'],
-                        '1-rouge-2f': rouge_score_1['rouge-2']['f'],
-                        '1-rouge-lf': rouge_score_1['rouge-l']['f'],
-                        '2-rouge-1f': rouge_score_2['rouge-1']['f'],
-                        '2-rouge-2f': rouge_score_2['rouge-2']['f'],
-                        '2-rouge-lf': rouge_score_2['rouge-l']['f'],
-                        '1-cosine-sim': sm1,
-                        '2-cosine-sim': sm2})
-    df = df.append(df2, ignore_index = True)
+    # df.loc['Jane',:] = [23, 'London', 'F']
+    df.loc[int(np.ceil(i/n_sample)),:] = [rouge_score_1['rouge-1']['f'],
+                        rouge_score_1['rouge-2']['f'],
+                        rouge_score_1['rouge-l']['f'],
+                        rouge_score_2['rouge-1']['f'],
+                        rouge_score_2['rouge-2']['f'],
+                        rouge_score_2['rouge-l']['f'],
+                        sm1.item(),
+                        sm2.item()]
+    # df = df.append(df2, ignore_index = True)
     print(df)
+print("------------------------------->_<-------------------------------")
 
-for column in df:
-    print(column.mean())
+print(df)
+for column in list(df.columns):
+    print(df[column].mean())
 
 df.to_csv(SAVEPATH,index=False)
 
