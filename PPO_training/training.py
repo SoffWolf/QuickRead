@@ -26,7 +26,7 @@ config = {
     "cls_model_name": "SophieTr/RM_incr_lr_v1",   # reward model
     "tk_name": "QuickRead/pegasus-reddit-7e05",    # tokenizer name
     "steps": 25600,
-    "batch_size": 1, #TO BE BACK TO 8
+    "batch_size": 8, #TO BE BACK TO 8
     "forward_batch_size":1,
     "ppo_epochs": 1,   
     "txt_in_len": 5,
@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_v8_test_2ndHalf"
+RUN_NAME = "PPO_v8"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -108,13 +108,13 @@ else:
 
 error_lst = []
 for epoch in range(1):
-    # sample = shuffle(df)
-    sample = df
+    sample = shuffle(df)
+    #sample = df
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    # for k in tqdm(range(0, int(np.ceil(len(sample)/2))-config["batch_size"]), config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
-    for k in tqdm(range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample)))-config["batch_size"]), config["batch_size"]):
+    for k in range(0, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
         try:
 
@@ -152,9 +152,9 @@ for epoch in range(1):
                 response_tensors = response_tensors + list(torch.split(response,1))
 
                 rewards.append(reward)
-            for k in range(len(query_tensors)):
-                query_tensors[k] = query_tensors[k].squeeze(0)
-                response_tensors[k] = response_tensors[k].squeeze(0)
+            for j in range(len(query_tensors)):
+                query_tensors[j] = query_tensors[j].squeeze(0)
+                response_tensors[j] = response_tensors[j].squeeze(0)
 
             query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
             response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
@@ -167,7 +167,7 @@ for epoch in range(1):
             response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
 
             #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-            # stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+            stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
 
             #### Log everything
             timing['time/mini_batch'] = time.time()-t0
@@ -178,9 +178,9 @@ for epoch in range(1):
     #         logs['env/reward_dist'] = rewards.cpu().numpy()
             # wandb.log(logs)
             if k%1000 == 0:
-                print("Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
+                print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
                 checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
-                torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch-{}.pth'.format(k+1)) )
+                torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch.pth') )
         except Exception as e:
             print(("=^.^=")*100)
             print("Error in for-k loop: ", e)    
