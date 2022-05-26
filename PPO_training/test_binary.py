@@ -3,7 +3,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-
+from tqdm import tqdm
 sys.path.insert(0,'..')
 from pathlib import Path  
 from transformers import PegasusTokenizer, PegasusForConditionalGeneration
@@ -61,9 +61,11 @@ columns = [
     "post",
     "summary"
 ]
-for post in input_posts:
+# for post in input_posts:
+for i in tqdm(range(len(input_posts))):
+    post = input_posts[i]
     curr_row = []
-    print(post, flush=True)
+    print("i = ", i, "\n", post, flush=True)
     print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
