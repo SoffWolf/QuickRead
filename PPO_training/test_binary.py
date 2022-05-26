@@ -62,10 +62,10 @@ columns = [
     "summary"
 ]
 # for post in input_posts:
-for i in tqdm(range(len(input_posts))):
+for i in tqdm(range(len(input_posts[:5]))):
     post = input_posts[i]
     curr_row = []
-    print("i = ", i, "\n", post, flush=True)
+    print("\ni = ", i, "\n", post, flush=True)
     print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
@@ -77,8 +77,8 @@ for i in tqdm(range(len(input_posts))):
     print("------------------------------->_<-------------------------------", flush=True)
 
 df = pd.DataFrame(data, columns=columns)
-df.to_parquet("./ppo_output/out.parquet", engine="pyarrow", index=False)
+df.to_parquet(OUT_PATH, engine="pyarrow", index=False)
 print("Successfully create parquet file")
-df = pd.read_parquet('./ppo_output/out.parquet', engine="pyarrow")
+df = pd.read_parquet(OUT_PATH, engine="pyarrow")
 print(df.dtypes)
 print(df)
