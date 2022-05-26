@@ -47,7 +47,7 @@ def preprocess(inp):
     input_ids = tokenizer(inp, padding=True, truncation=True, return_tensors='pt').input_ids
     return input_ids
 def predict(input_ids):
-    outputs = policy.generate(input_ids=input_ids)
+    outputs = policy.generate(input_ids)
     res = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
     return res
 
@@ -57,18 +57,18 @@ columns = [
     "summary"
 ]
 
-for post in input_posts[5]:
+for post in input_posts[:5]:
     curr_row = []
-    print(post)
-    print("===>"*4)
+    print(post, flush=True)
+    print("===>"*4, flush=True)
     tokens = preprocess(post)
 
     response = predict(tokens)
     curr_row.append(post)
     curr_row.append(response)
     data.append(curr_row)
-    print(response)
-    print("------------------------------->_<-------------------------------")
+    print(response, flush=True)
+    print("------------------------------->_<-------------------------------", flush=True)
 
 df = pd.DataFrame(data, columns=columns)
 df.to_parquet("./ppo_output/human_feedback.parquet", engine="pyarrow", index=False)

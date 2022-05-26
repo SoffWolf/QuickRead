@@ -7,6 +7,7 @@ from rouge import Rouge
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 from pathlib import Path  
+from tqdm import tqdm
 
 SAVEPATH = Path('out.csv') 
 
@@ -23,14 +24,6 @@ model_name = "QuickRead/pegasus-reddit-7e05"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
-## Model generates: 
-def preprocess(inp):
-    input_ids = tokenizer(inp, return_tensors="pt", truncation=True).input_ids
-    return input_ids
-def predict(input_ids):
-    outputs = model.generate(input_ids=input_ids)
-    res = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-    return res
 
 def get_embedding(sentences):
     s_bert = SentenceTransformer('all-distilroberta-v1')
@@ -41,14 +34,15 @@ def get_embedding(sentences):
 
 # Model generate
 # TODO: Add logic: if file model_generated.pyarrow not existed: run the prediction and save result to file --> else: load prediction
-out = []
-for post in input_posts:
-#   print(post)
-#   print("++++"*4)
-  tokens = preprocess(post)
+out = list(pd.read_parquet('../PPO_training/ppo_output/out.parquet', engine="pyarrow")['summary'])
+# out = []
+# for post in input_posts:
+# #   print(post)
+# #   print("++++"*4)
+#   tokens = preprocess(post)
   
-  response = predict(tokens)
-  out.append(response)
+#   response = predict(tokens)
+#   out.append(response)
 #   print(response)
 #   print("------------------------------->_<-------------------------------")
 
@@ -60,7 +54,7 @@ sm1_lst = []
 sm2_lst = []
 df = pd.DataFrame(columns=[ '1-rouge-1f', '1-rouge-2f', '1-rouge-lf', '2-rouge-1f', '2-rouge-2f', '2-rouge-lf', '1-cosine-sim', '2-cosine-sim'],
                   index=range(int(np.ceil(len(out)/n_sample))))
-for i in range(0, len(out), n_sample):
+for i in tqdm(range(0, len(out), n_sample)):
     rouge = Rouge()
     rouge_score_1 = rouge.get_scores(out[i:i+n_sample], label_summaries_1[i:i+n_sample], avg=True)
     rouge_score_2 = rouge.get_scores(out[i:i+n_sample], label_summaries_2[i:i+n_sample], avg=True)
