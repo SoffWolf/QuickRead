@@ -14,6 +14,7 @@ from rewards.reward_model import RewardModel
 
 from huggingface_hub import HfApi, create_repo, Repository
 
+
 #### IMPORT DATA
 DATAPATH = '../rewards/data/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
@@ -30,6 +31,10 @@ label_summaries_2 = list(df_test['summary2'].values)
 RUN_NAME = "PPO_v8" #"PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth') #'latest_epo.pth')#'epoch-8.pth')#'epoch-16.pth') #'latest_minibatch.pth')
+
+### OUTPUT PATH
+OUTPUT_NAME = RUN_NAME + '_out.parquet'
+OUT_PATH = str(Path("test_binary.py").parent)+'ppo_output/'+OUTPUT_NAME
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -56,11 +61,10 @@ columns = [
     "post",
     "summary"
 ]
-
-for post in input_posts[:5]:
+for post in input_posts:
     curr_row = []
     print(post, flush=True)
-    print("===>"*4, flush=True)
+    print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
     response = predict(tokens)
@@ -71,8 +75,8 @@ for post in input_posts[:5]:
     print("------------------------------->_<-------------------------------", flush=True)
 
 df = pd.DataFrame(data, columns=columns)
-df.to_parquet("./ppo_output/human_feedback.parquet", engine="pyarrow", index=False)
+df.to_parquet("./ppo_output/out.parquet", engine="pyarrow", index=False)
 print("Successfully create parquet file")
-df = pd.read_parquet('data/human_feedback.parquet', engine="pyarrow")
+df = pd.read_parquet('./ppo_output/out.parquet', engine="pyarrow")
 print(df.dtypes)
 print(df)

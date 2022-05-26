@@ -13,7 +13,7 @@ SAVEPATH = Path('out.csv')
 
 DATAPATH = '../rewards/data/human_feedback.parquet'
 df = pd.read_parquet(DATAPATH, engine="pyarrow")
-n_sample = 1
+n_sample = 10
 df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.9*len(df)), int(.95*len(df))])
 
 input_posts = list(df_test['post'].values)
