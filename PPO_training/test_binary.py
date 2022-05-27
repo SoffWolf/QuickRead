@@ -34,7 +34,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth') #'latest_epo.pth')#
 
 ### OUTPUT PATH
 OUTPUT_NAME = RUN_NAME + '_out.parquet'
-OUT_PATH = str(Path("test_binary.py").parent)+'ppo_output/'+OUTPUT_NAME
+OUT_PATH = str(Path("test_binary.py").parent)+'/ppo_output/'+OUTPUT_NAME
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -62,19 +62,19 @@ columns = [
     "summary"
 ]
 # for post in input_posts:
-for i in tqdm(range(len(input_posts[:5]))):
+for i in tqdm(range(len(input_posts))):
     post = input_posts[i]
     curr_row = []
-    print("\ni = ", i, "\n", post, flush=True)
-    print("===> Summary from model", flush=True)
+    #print("\ni = ", i, "\n", post, flush=True)
+    #print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
     response = predict(tokens)
     curr_row.append(post)
     curr_row.append(response)
     data.append(curr_row)
-    print(response, flush=True)
-    print("------------------------------->_<-------------------------------", flush=True)
+    #print(response, flush=True)
+    #print("------------------------------->_<-------------------------------", flush=True)
 
 df = pd.DataFrame(data, columns=columns)
 df.to_parquet(OUT_PATH, engine="pyarrow", index=False)
