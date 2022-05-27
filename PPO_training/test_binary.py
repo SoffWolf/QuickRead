@@ -6,7 +6,8 @@ import numpy as np
 from tqdm import tqdm
 sys.path.insert(0,'..')
 from pathlib import Path  
-from transformers import PegasusTokenizer, PegasusForConditionalGeneration
+from transformers import PegasusTokenizer, PegasusForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
+
 
 from pegasus_with_heads import PegasusWithValueHead
 from ppo import PPOTrainer
@@ -28,13 +29,13 @@ label_summaries_2 = list(df_test['summary2'].values)
 
 #### IMPORT MODEL
 
-RUN_NAME = "PPO_v8" #"PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
+RUN_NAME = "PPO_v8" #"finetuned_Pegasus" #"PPO_v8" #"PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth') #'latest_epo.pth')#'epoch-8.pth')#'epoch-16.pth') #'latest_minibatch.pth')
 
 ### OUTPUT PATH
 OUTPUT_NAME = RUN_NAME + '_out.parquet'
-OUT_PATH = str(Path("test_binary.py").parent)+'/ ppo_output/'+OUTPUT_NAME
+OUT_PATH = str(Path("test_binary.py").parent)+'/ppo_output/'+OUTPUT_NAME+'_1500'
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -42,6 +43,10 @@ tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", ca
 # Policy
 policy = PegasusWithValueHead(supervised_baseline)
 policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=torch.device('cpu')), strict=False)
+
+model_name = "QuickRead/pegasus-reddit-7e05"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 # Upload to HuggingFace hub
 # with Repository("ppo-model", clone_from="QuickRead/PP0_rm_v1_full", use_auth_token=True).commit(commit_message="PPO demo model :)"):
@@ -62,19 +67,19 @@ columns = [
     "summary"
 ]
 # for post in input_posts:
-for i in tqdm(range(len(input_posts[:5]))):
+for i in tqdm(range(len(input_posts[:1500]))):
     post = input_posts[i]
     curr_row = []
-    print("\ni = ", i, "\n", post, flush=True)
-    print("===> Summary from model", flush=True)
+    #print("\ni = ", i, "\n", post, flush=True)
+    #print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
     response = predict(tokens)
     curr_row.append(post)
     curr_row.append(response)
     data.append(curr_row)
-    print(response, flush=True)
-    print("------------------------------->_<-------------------------------", flush=True)
+    #print(response, flush=True)
+    #print("------------------------------->_<-------------------------------", flush=True)
 
 df = pd.DataFrame(data, columns=columns)
 df.to_parquet(OUT_PATH, engine="pyarrow", index=False)
