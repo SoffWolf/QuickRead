@@ -29,13 +29,13 @@ label_summaries_2 = list(df_test['summary2'].values)
 
 #### IMPORT MODEL
 
-RUN_NAME = "PPO_v8" #"finetuned_Pegasus" #"PPO_v8" #"PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
+RUN_NAME = "finetuned_Pegasus" #"PPO_v8" #"PP0_rm_v1_full"#"ppo-peg-7e05-rm-1epoch_v3"#"PP0_rm_v1"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth') #'latest_epo.pth')#'epoch-8.pth')#'epoch-16.pth') #'latest_minibatch.pth')
 
 ### OUTPUT PATH
 OUTPUT_NAME = RUN_NAME + '_out.parquet'
-OUT_PATH = str(Path("test_binary.py").parent)+'/ppo_output/'+OUTPUT_NAME+'_1500'
+OUT_PATH = str(Path("test_binary.py").parent)+'/ppo_output/'+OUTPUT_NAME
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
@@ -56,8 +56,12 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 def preprocess(inp):
     input_ids = tokenizer(inp, padding=True, truncation=True, return_tensors='pt').input_ids
     return input_ids
-def predict(input_ids):
-    outputs = policy.generate(input_ids)
+def predict(input_ids, supervised = False):
+    if supervised:
+        outputs = model.generate(input_ids=input_ids)
+    else:
+        outputs = policy.generate(input_ids)
+    
     res = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
     return res
 
@@ -74,7 +78,7 @@ for i in tqdm(range(len(input_posts[:1500]))):
     #print("===> Summary from model", flush=True)
     tokens = preprocess(post)
 
-    response = predict(tokens)
+    response = predict(tokens, True)
     curr_row.append(post)
     curr_row.append(response)
     data.append(curr_row)
