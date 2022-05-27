@@ -34,7 +34,7 @@ CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth') #'latest_epo.pth')#
 
 ### OUTPUT PATH
 OUTPUT_NAME = RUN_NAME + '_out.parquet'
-OUT_PATH = str(Path("test_binary.py").parent)+'ppo_output/'+OUTPUT_NAME
+OUT_PATH = str(Path("test_binary.py").parent)+'/ ppo_output/'+OUTPUT_NAME
 
 supervised_baseline = PegasusForConditionalGeneration.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
 tokenizer = PegasusTokenizer.from_pretrained("QuickRead/pegasus-reddit-7e05", cache_dir="HF_HOME")
