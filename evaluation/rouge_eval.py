@@ -35,16 +35,6 @@ def get_embedding(sentences):
 # Model generate
 # TODO: Add logic: if file model_generated.pyarrow not existed: run the prediction and save result to file --> else: load prediction
 out = list(pd.read_parquet('../PPO_training/ppo_output/out.parquet', engine="pyarrow")['summary'])
-# out = []
-# for post in input_posts:
-# #   print(post)
-# #   print("++++"*4)
-#   tokens = preprocess(post)
-  
-#   response = predict(tokens)
-#   out.append(response)
-#   print(response)
-#   print("------------------------------->_<-------------------------------")
 
 # calculate the scores here
 # calculate rouge
@@ -54,42 +44,41 @@ sm1_lst = []
 sm2_lst = []
 df = pd.DataFrame(columns=[ '1-rouge-1f', '1-rouge-2f', '1-rouge-lf', '2-rouge-1f', '2-rouge-2f', '2-rouge-lf', '1-cosine-sim', '2-cosine-sim'],
                   index=range(int(np.ceil(len(out)/n_sample))))
-for i in tqdm(range(0, len(out), n_sample)):
-    rouge = Rouge()
-    rouge_score_1 = rouge.get_scores(out[i:i+n_sample], label_summaries_1[i:i+n_sample], avg=True)
-    rouge_score_2 = rouge.get_scores(out[i:i+n_sample], label_summaries_2[i:i+n_sample], avg=True)
+for i in tqdm(range(0, len(out) - (len(out) % n_sample), n_sample)):
+    try:
+        rouge = Rouge()
+        rouge_score_1 = rouge.get_scores(out[i:i+n_sample], label_summaries_1[i:i+n_sample], avg=True)
+        rouge_score_2 = rouge.get_scores(out[i:i+n_sample], label_summaries_2[i:i+n_sample], avg=True)
 
-    #calculate sbert
-    d_out = get_embedding(out[i:i+n_sample])
+        #calculate sbert
+        d_out = get_embedding(out[i:i+n_sample])
 
-    d_1 = get_embedding(label_summaries_1[i:i+n_sample])
-    sm1_mat = util.cos_sim(d_1, d_out)
-    sm1 = sum([sm1_mat[k][k] for k in range(n_sample)])/n_sample
+        d_1 = get_embedding(label_summaries_1[i:i+n_sample])
+        sm1_mat = util.cos_sim(d_1, d_out)
+        sm1 = sum([sm1_mat[k][k] for k in range(n_sample)])/n_sample
 
 
-    d_2 = get_embedding(label_summaries_2[i:i+n_sample])
-    sm2_mat = util.cos_sim(d_2, d_out)
-    sm2 = sum([sm2_mat[k][k] for k in range(n_sample)])/n_sample
+        d_2 = get_embedding(label_summaries_2[i:i+n_sample])
+        sm2_mat = util.cos_sim(d_2, d_out)
+        sm2 = sum([sm2_mat[k][k] for k in range(n_sample)])/n_sample
 
-    # append that shit
-    rouge_1_lst.append(rouge_score_1)
-    rouge_2_lst.append(rouge_score_2)
-    sm1_lst.append(sm1)
-    sm2_lst.append(sm2)
-    # df.loc['Jane',:] = [23, 'London', 'F']
-    df.loc[int(np.ceil(i/n_sample)),:] = [rouge_score_1['rouge-1']['f'],
-                        rouge_score_1['rouge-2']['f'],
-                        rouge_score_1['rouge-l']['f'],
-                        rouge_score_2['rouge-1']['f'],
-                        rouge_score_2['rouge-2']['f'],
-                        rouge_score_2['rouge-l']['f'],
-                        sm1.item(),
-                        sm2.item()]
-    # df = df.append(df2, ignore_index = True)
-    # print(df)
-# print("------------------------------->_<-------------------------------")
-
-# print(df)
+        # append that shit
+        rouge_1_lst.append(rouge_score_1)
+        rouge_2_lst.append(rouge_score_2)
+        sm1_lst.append(sm1)
+        sm2_lst.append(sm2)
+        # df.loc['Jane',:] = [23, 'London', 'F']
+        df.loc[int(np.ceil(i/n_sample)),:] = [rouge_score_1['rouge-1']['f'],
+                            rouge_score_1['rouge-2']['f'],
+                            rouge_score_1['rouge-l']['f'],
+                            rouge_score_2['rouge-1']['f'],
+                            rouge_score_2['rouge-2']['f'],
+                            rouge_score_2['rouge-l']['f'],
+                            sm1.item(),
+                            sm2.item()]
+    except Exception as e:
+        print(f'Error at {i}: {e}')
+        break
 for column in list(df.columns):
     print(df[column].mean())
 
