@@ -8,7 +8,6 @@ fine_tuning_v2.out
 logs/
 reddit_clean/
 results/
-run_fine-tune.py
 submit.sh
 submit_v2.sh
 venv/
