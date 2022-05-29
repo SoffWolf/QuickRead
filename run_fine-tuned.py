@@ -30,7 +30,7 @@ def preprocess(inp):
     input_ids = tokenizer(inp, return_tensors="pt").input_ids
     return input_ids
 def predict(input_ids):
-    outputs = model.generate(input_ids=input_ids)
+    outputs = model.generate(input_ids)
     res = tokenizer.batch_decode(outputs, skip_special_tokens=True)#[0]
     return res
 
