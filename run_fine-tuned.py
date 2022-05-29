@@ -4,7 +4,6 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, PegasusForConditionalGeneration, PegasusTokenizer
 from pathlib import Path  
 
-sys.path.insert(0,'..')
 from PPO_training.pegasus_with_heads import PegasusWithValueHead
 from PPO_training.ppo import PPOTrainer
 from rewards.reward_model import RewardModel
