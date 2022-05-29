@@ -23,7 +23,7 @@ from PPO_training.pegasus_with_heads import PegasusWithValueHead
 # outputs_benchmark = model_origin.generate(input_ids=input_ids_benchmark)
 # print("Generated from benchmark\n:", tokenizer.batch_decode(outputs_benchmark, skip_special_tokens=True))
 print(len(sys.argv))
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     raise ValueError('Please provide:\n(1) the input post txt file, and\n(2) model name: "QuickRead/pegasus-reddit-7e05", "PPO_v8", "PPO_v9".')
 
 def preprocess(inp):
@@ -35,8 +35,9 @@ def predict(input_ids):
     return res
 
 if __name__ == '__main__':
-    file_name = sys.argv[0]
-    model_name = sys.argv[1]
+    file_name = sys.argv[1]
+    model_name = sys.argv[2]
+    print(f'file name = "{file_name}", and model_name = "{model_name}"')
     txt = ""
     with open(file_name,'r') as line: 
         txt += line.read()
