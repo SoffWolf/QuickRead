@@ -5,8 +5,6 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, PegasusForConditi
 from pathlib import Path  
 
 from PPO_training.pegasus_with_heads import PegasusWithValueHead
-from PPO_training.ppo import PPOTrainer
-from rewards.reward_model import RewardModel
 # My fine-tuned
 # tokenizer = AutoTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
 # model = AutoModelForSeq2SeqLM.from_pretrained("SophieTr/fine-tune-Pegasus")
