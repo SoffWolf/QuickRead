@@ -54,6 +54,7 @@ if __name__ == '__main__':
             supervised_baseline = PegasusForConditionalGeneration.from_pretrained(supervised_baseline_name, cache_dir="HF_HOME")
             policy = PegasusWithValueHead(supervised_baseline)
             policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=torch.device('cpu')), strict=False)
+            print(policy)
             model = policy
         inp_ids = preprocess(txt)
         print('Model generated Summary:\n', predict(inp_ids))
