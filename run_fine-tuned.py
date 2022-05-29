@@ -4,8 +4,9 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, PegasusForConditionalGeneration, PegasusTokenizer
 from pathlib import Path  
 
-from pegasus_with_heads import PegasusWithValueHead
-from ppo import PPOTrainer
+sys.path.insert(0,'..')
+from PPO_training.pegasus_with_heads import PegasusWithValueHead
+from PPO_training.ppo import PPOTrainer
 from rewards.reward_model import RewardModel
 # My fine-tuned
 # tokenizer = AutoTokenizer.from_pretrained("SophieTr/fine-tune-Pegasus")
@@ -26,7 +27,7 @@ from rewards.reward_model import RewardModel
 # print("Generated from benchmark\n:", tokenizer.batch_decode(outputs_benchmark, skip_special_tokens=True))
 
 if len(sys.argv) != 2:
-    raise ValueError('Please provide:\n(1) the input post txt file, and\n(2) model name: "QuickRead/pegasus-reddit-7e05", "PPO_v8", "PPO_v10".')
+    raise ValueError('Please provide:\n(1) the input post txt file, and\n(2) model name: "QuickRead/pegasus-reddit-7e05", "PPO_v8", "PPO_v9".')
 
 def preprocess(inp):
     input_ids = tokenizer(inp, return_tensors="pt").input_ids
