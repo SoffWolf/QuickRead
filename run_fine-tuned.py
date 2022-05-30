@@ -55,6 +55,7 @@ if __name__ == '__main__':
             policy = PegasusWithValueHead(supervised_baseline)
             policy.load_state_dict(torch.load(os.path.join(CHECKPOINT_PATH), map_location=torch.device('cpu')), strict=False)
             model = policy
+            #print("Policy: ", policy, "\n\n", policy.state_dict())
         inp_ids = preprocess(txt)
         print('Model generated Summary:\n', predict(inp_ids))
     except Exception as e:
