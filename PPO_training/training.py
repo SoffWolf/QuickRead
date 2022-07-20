@@ -42,11 +42,38 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_print_sample"
+RUN_NAME = "PPO_debug_july"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth')
+
+DEBUG_INPUT="""TIFU by telling my bf my back up plan for my future
+
+TIFU by telling my bf that I'd join the military if I didn't find a passion.
+
+Me and my bf were taling about our future and we started taking about our hobbies and passions. He loves all things science more specifically about chemistry. He loves it and talks about it with stars in his eyes and he olans to make a career out of it in the future.
+
+I don't have any.
+
+I'm not passionate about anything like that. I don't have any hobbies. I play video games and enjoy the occasional arts and crafts. But nothing that I could talk about for hours and hours with so much enthusiasm as he does.
+
+I told him that and about my back up plan to just join the military and make myself useful in some way. That I had nothing else and that I shouldn't just be wasting oxygen.
+
+There was a small silence.
+
+I just hear in the smallest voice I've ever heard him speak in that I almost didn't hear it.
+
+Please don't leave
+
+I looked up at him. He looked so sad and maybe even scared. Like I was going to evaporate right infront of him.
+
+I quickly apologized and reassured him that it was my very very last option and that even then there was a large chance that I wouldn't do it anyway. He just hugged me and said that he'd take care of me and that I could take my time finding my passions.
+
+We sat there holding eachother for a while
+
+I never want to be the reason I see him make a face like that ever again."""
+
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
@@ -87,7 +114,13 @@ val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
 test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
 
 df = pd.DataFrame(train_texts) # Add a Dataset & Dataloader class to handle loading data from disk, & shuffle & sample
-print(pd.DataFrame(train_texts), pd.DataFrame(train_labels))
+# Permanently changes the pandas settings
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', -1)
+print(pd.DataFrame(train_texts).head(n=5), pd.DataFrame(train_labels).head(n=5))
+
 #################### Training ######################
 ppo_trainer = PPOTrainer(policy, policy_ref, **config)
 fbs = config['forward_batch_size']
@@ -139,8 +172,12 @@ for epoch in range(1):
                 response = response.to(device)
                 if i == 0:
                     if k == 0 or k%500 == 0:
-                        resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-
+                        #resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                        debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
+                        print(f'debug query at k%500: \n\n${debug_query}')
+                        debug_response = policy.generate(debug_query) 
+                        print(f'debug response at k%500: \n\n${debug_response}')
+                        resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
                         print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
                 reward_model.eval()
                 with torch.no_grad():
@@ -177,8 +214,16 @@ for epoch in range(1):
     #         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
     #         logs['env/reward_dist'] = rewards.cpu().numpy()
             # wandb.log(logs)
-            if k%1000 == 0:
+            if k>1 and k%1000 == 0:
+                #TODO: print model output. Verify same model is being save
                 print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
+                debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
+                print(f'debug query at k%1000: \n\n${debug_query}')
+                debug_response = policy.generate(debug_query)
+       	       	print(f'debug response at k%1000: \n\n${debug_response}') 
+       	       	resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
+                
                 checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
                 torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch.pth') )
         except Exception as e:
