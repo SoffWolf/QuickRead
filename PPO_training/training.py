@@ -48,32 +48,6 @@ RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
 CHECKPOINT_PATH = os.path.join(PATH, 'latest_minibatch.pth')
 
-DEBUG_INPUT="""TIFU by telling my bf my back up plan for my future
-
-TIFU by telling my bf that I'd join the military if I didn't find a passion.
-
-Me and my bf were taling about our future and we started taking about our hobbies and passions. He loves all things science more specifically about chemistry. He loves it and talks about it with stars in his eyes and he olans to make a career out of it in the future.
-
-I don't have any.
-
-I'm not passionate about anything like that. I don't have any hobbies. I play video games and enjoy the occasional arts and crafts. But nothing that I could talk about for hours and hours with so much enthusiasm as he does.
-
-I told him that and about my back up plan to just join the military and make myself useful in some way. That I had nothing else and that I shouldn't just be wasting oxygen.
-
-There was a small silence.
-
-I just hear in the smallest voice I've ever heard him speak in that I almost didn't hear it.
-
-Please don't leave
-
-I looked up at him. He looked so sad and maybe even scared. Like I was going to evaporate right infront of him.
-
-I quickly apologized and reassured him that it was my very very last option and that even then there was a large chance that I wouldn't do it anyway. He just hugged me and said that he'd take care of me and that I could take my time finding my passions.
-
-We sat there holding eachother for a while
-
-I never want to be the reason I see him make a face like that ever again."""
-
 ## WANDB 
 group = "quickread"
 project = "PPO-training"
@@ -149,8 +123,6 @@ for epoch in range(1):
     for k in range(0, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
     #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
-        try:
-
             query_batch = sample[k:k+config["batch_size"]]
             logs = dict()
             timing = dict()
@@ -161,31 +133,47 @@ for epoch in range(1):
             rewards = []
             
             for i in range(int(config["batch_size"] / fbs)):
-                # try:
-                query = query_batch[i*fbs:(i+1)*fbs]
-                query = map(lambda x: x[0], query.values.tolist())
-                query = list(query)
-                query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
-                query = query.to(device)
+                try:
+                    query = query_batch[i*fbs:(i+1)*fbs]
+                    query = map(lambda x: x[0], query.values.tolist())
+                    query = list(query)
+                    query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
+                    query = query.to(device)
+                except Exception as e1:
+                    print('_*_'*100)
+                    print('Possible indexing error at catch e1 for tokenizing query: ', e1)
+                    print('Tokenizer config: ', tokenizer)
+                    print('Length of query ib question: ', len(query))
+                    break
+
                 # print("QUERY (", i, ") = ",query.shape)
-                response = policy.generate(query) # will not produce text
-                response = response.to(device)
+                try:
+                    response = policy.generate(query) # will not produce text
+                    response = response.to(device)
+                except Exception as e2:
+                    print('_*_'*100)
+                    print('Possible indexing error at catch e2 for generating response using policy: ', e2)
+                    print('Policy config: ', policy.model)
+                    print('Length of query in question: ', len(query))
+                    break
+
                 if i == 0:
                     if k == 0 or k%500 == 0:
-                        #resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-                        debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
-                        debug_query = debug_query.to(device)
-                        print(f'debug query at k%500: \n\n${debug_query}')
-                        debug_response = policy.generate(debug_query)
-                        debug_response = debug_response.to(device) 
-                        print(f'debug response at k%500: \n\n${debug_response}')
-                        resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                        resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
                         print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
-                reward_model.eval()
-                with torch.no_grad():
-                    reward = reward_model(query, response).detach()
-                reward = reward.to(device)
                 
+                try:
+                    reward_model.eval()
+                    with torch.no_grad():
+                        reward = reward_model(query, response).detach()
+                    reward = reward.to(device)
+                except Exception as e3:
+                    print('_*_'*100)
+                    print('Possible indexing error at catch e3 for generating rewards with reward_model: ', e3)
+                    print('Reward model config: ', reward_model)
+                    print('Length of query and response in question: ', len(query), len(response))
+                    break
+
                 query_tensors = query_tensors + list(torch.split(query,1))
 
                 response_tensors = response_tensors + list(torch.split(response,1))
@@ -194,20 +182,25 @@ for epoch in range(1):
             for j in range(len(query_tensors)):
                 query_tensors[j] = query_tensors[j].squeeze(0)
                 response_tensors[j] = response_tensors[j].squeeze(0)
+            try:
+                query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
+                response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
+                query_tensors = query_tensors.unsqueeze(dim=0).to(device)
+                response_tensors = response_tensors.unsqueeze(dim=0).to(device)
+                # print("Rewards before torch.cat: ", rewards)
+                rewards = torch.cat(rewards).to(device)
+                # print("Rewards after torch.cat: ", rewards)
+                query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
+                response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
 
-            query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-            response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-            query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-            response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-            # print("Rewards before torch.cat: ", rewards)
-            rewards = torch.cat(rewards).to(device)
-            # print("Rewards after torch.cat: ", rewards)
-            query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-            response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-
-            #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-            stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-
+                #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
+                stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+            except Exception as e4:
+                print('_*_'*100)
+                print('Possible indexing error at catch e4 for geting stats with ppo_trainer: ', e4)
+                print('ppo_trainer config: ', ppo_trainer)
+                print('Shape of query tensors, response tensors, and rewards in question: ', query_tensors.shape, response_tensors.shape, len(rewards))
+                break
             #### Log everything
             timing['time/mini_batch'] = time.time()-t0
     #         logs.update(timing)
@@ -219,18 +212,9 @@ for epoch in range(1):
             if k>1 and k%1000 == 0:
                 #TODO: print model output. Verify same model is being save
                 print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
-                debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
-                debug_query = debug_query.to(device)
-                print(f'debug query at k%1000: \n\n${debug_query}')
-                debug_response = policy.generate(debug_query)
-                debug_response = debug_response.to(device)
-                print(f'debug response at k%1000: \n\n${debug_response}') 
-                resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-                print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
-                
                 checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
                 torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch.pth') )
-        except Exception as e:
+            
             print(("=^.^=")*100)
             print("Error in for-k loop: ", e)    
             print("Index k where error occured: ", k)    
