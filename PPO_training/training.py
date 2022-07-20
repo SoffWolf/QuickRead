@@ -214,13 +214,7 @@ for epoch in range(1):
                 print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
                 checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
                 torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch.pth') )
-            
-            print(("=^.^=")*100)
-            print("Error in for-k loop: ", e)    
-            print("Index k where error occured: ", k)    
-            error_lst.append(k)
-            print(("=^.^=")*100)
-            pass
+
 # HF push_to_hub:
 # policy.push_to_hub("SophieTr/"+RUN_NAME)
 # tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
