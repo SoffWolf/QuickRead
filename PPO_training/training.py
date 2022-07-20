@@ -174,8 +174,10 @@ for epoch in range(1):
                     if k == 0 or k%500 == 0:
                         #resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
                         debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
+                        debug_query = debug_query.to(device)
                         print(f'debug query at k%500: \n\n${debug_query}')
-                        debug_response = policy.generate(debug_query) 
+                        debug_response = policy.generate(debug_query)
+                        debug_response = debug_response.to(device) 
                         print(f'debug response at k%500: \n\n${debug_response}')
                         resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
                         print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
@@ -218,10 +220,12 @@ for epoch in range(1):
                 #TODO: print model output. Verify same model is being save
                 print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
                 debug_query = tokenizer(DEBUG_INPUT, padding=True, truncation=True, return_tensors='pt').input_ids
+                debug_query = debug_query.to(device)
                 print(f'debug query at k%1000: \n\n${debug_query}')
                 debug_response = policy.generate(debug_query)
-       	       	print(f'debug response at k%1000: \n\n${debug_response}') 
-       	       	resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+                debug_response = debug_response.to(device)
+                print(f'debug response at k%1000: \n\n${debug_response}') 
+                resp_txt = tokenizer.batch_decode(debug_response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
                 print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
                 
                 checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
