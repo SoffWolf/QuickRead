@@ -171,7 +171,8 @@ for epoch in range(1):
                     print('_*_'*100)
                     print('Possible indexing error at catch e3 for generating rewards with reward_model: ', e3)
                     print('Reward model config: ', reward_model)
-                    print('Length of query and response in question: ', len(query), len(response))
+                    print('Length of query and response in question: ', query.size(), response.size())
+                    print('query in question: ', query, '\n\n and response:', response)
                     break
 
                 query_tensors = query_tensors + list(torch.split(query,1))
