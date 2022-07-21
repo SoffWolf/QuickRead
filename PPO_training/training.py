@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_debug_july"
+RUN_NAME = "PPO_memcheck_july"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -115,8 +115,8 @@ else:
 
 error_lst = []
 for epoch in range(1):
-    sample = shuffle(df)
-    #sample = df
+    # sample = shuffle(df)
+    sample = df
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
@@ -173,8 +173,19 @@ for epoch in range(1):
                     print('Reward model config: ', reward_model)
                     print('Length of query and response in question: ', query.size(), response.size())
                     print('query in question: ', query, '\n\n and response:', response)
+                    print(f'k = {k}, i = {i}')
+                    query_tobe_blacklisted = query_batch[i*fbs:(i+1)*fbs]
+                    queries_array_contained_black_listed_query = query_batch
+                    with open("BLACK_LISTED.txt","a") as file:
+                        file.write("\n","__*__"*100, "\n")
+                        file.write("Query array containing the black listed query: \n")
+                        for i in queries_array_contained_black_listed_query:
+                            file.write('__', i, '\n')
+                        file.write('-->.<--' * 100, '\n')
+                        file.write("query_tobe_blacklisted: \n\n")
+                        file.write(query_tobe_blacklisted, '\n')
+                        file.write('-->.<--' * 100, '\n')
                     break
-
                 query_tensors = query_tensors + list(torch.split(query,1))
 
                 response_tensors = response_tensors + list(torch.split(response,1))
