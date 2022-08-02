@@ -139,7 +139,6 @@ for epoch in range(1):
                     query = list(query)
                     query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
                     query = query.to(device)
-                    print('query: ', query)
                 except Exception as e1:
                     print('_*_'*100)
                     print('Possible indexing error at catch e1 for tokenizing query: ', e1)
@@ -151,91 +150,19 @@ for epoch in range(1):
                 try:
                     response = policy.generate(query) # will not produce text
                     response = response.to(device)
-                    print('query: ', query)
-                    break
                 except Exception as e2:
                     print('_*_'*100)
                     print('Possible indexing error at catch e2 for generating response using policy: ', e2)
                     print('Policy config: ', policy.model)
                     print('Length of query in question: ', len(query))
-                    break
+                    break   
 
-                if i == 0:
-                    if k == 0 or k%500 == 0:
-                        resp_txt = tokenizer.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-                        print(f'RESPONSE txt("{i}") from mini batch ("{k}") is:\n {resp_txt}', flush=True)
-                
-                try:
-                    reward_model.eval()
-                    with torch.no_grad():
-                        reward = reward_model(query, response).detach()
-                    reward = reward.to(device)
-                except Exception as e3:
-                    print('_*_'*100)
-                    print('Possible indexing error at catch e3 for generating rewards with reward_model: ', e3)
-                    print('Reward model config: ', reward_model)
-                    print('Length of query and response in question: ', query.size(), response.size())
-                    print('query in question: ', query, '\n\n and response:', response)
-                    print(f'k = {k}, i = {i}')
-                    query_tobe_blacklisted = query_batch[i*fbs:(i+1)*fbs]
-                    queries_array_contained_black_listed_query = query_batch
-                    with open("BLACK_LISTED.txt","a") as file:
-                        file.write("\n","__*__"*100, "\n")
-                        file.write("Query array containing the black listed query: \n")
-                        for i in queries_array_contained_black_listed_query:
-                            file.write('__', i, '\n')
-                        file.write('-->.<--' * 100, '\n')
-                        file.write("query_tobe_blacklisted: \n\n")
-                        file.write(query_tobe_blacklisted, '\n')
-                        file.write('-->.<--' * 100, '\n')
-                    break
-                query_tensors = query_tensors + list(torch.split(query,1))
-
-                response_tensors = response_tensors + list(torch.split(response,1))
-
-                rewards.append(reward)
-            for j in range(len(query_tensors)):
-                query_tensors[j] = query_tensors[j].squeeze(0)
-                response_tensors[j] = response_tensors[j].squeeze(0)
-            try:
-                query_tensors = torch.nn.utils.rnn.pad_sequence(query_tensors)
-                response_tensors = torch.nn.utils.rnn.pad_sequence(response_tensors)
-                query_tensors = query_tensors.unsqueeze(dim=0).to(device)
-                response_tensors = response_tensors.unsqueeze(dim=0).to(device)
-                # print("Rewards before torch.cat: ", rewards)
-                rewards = torch.cat(rewards).to(device)
-                # print("Rewards after torch.cat: ", rewards)
-                query_tensors = query_tensors.view(query_tensors.shape[2], query_tensors.shape[1])
-                response_tensors = response_tensors.view(response_tensors.shape[2], response_tensors.shape[1])
-
-                #### Run PPO training --> COMMENT THIS OUT FOR NEXT TEST TO COLECT error data points
-                stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
-            except Exception as e4:
-                print('_*_'*100)
-                print('Possible indexing error at catch e4 for geting stats with ppo_trainer: ', e4)
-                print('ppo_trainer config: ', ppo_trainer)
-                print('Shape of query tensors, response tensors, and rewards in question: ', query_tensors.shape, response_tensors.shape, len(rewards))
-                break
-            #### Log everything
-            timing['time/mini_batch'] = time.time()-t0
-    #         logs.update(timing)
-    #         logs.update(stats)
-    #         logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-    #         logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-    #         logs['env/reward_dist'] = rewards.cpu().numpy()
-            # wandb.log(logs)
-            if k>1 and k%1000 == 0:
-                #TODO: print model output. Verify same model is being save
-                print("At k = ", k, " ---> Reward mean = ", torch.mean(rewards).cpu().numpy(), flush=True)
-                checkpoint = {'state_dict': policy.state_dict(), 'mini_batch': k}
-                torch.save( checkpoint, os.path.join(PATH, 'latest_minibatch.pth') )
-
-# HF push_to_hub:
-# policy.push_to_hub("SophieTr/"+RUN_NAME)
-# tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-file=open('error_2.txt','w')
-for items in error_lst:
-    file.writelines(items+'\n')
-file.close()
-checkpoint = {'state_dict': policy.state_dict()}
-torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
+                if not (torch.all(query >= 0)).item():
+                    print('query in text form: \n', query_batch[i*fbs:(i+1)*fbs])
+                    print('query as input_ids: \n', query)
+                    print('corresponding response to FAIL query as input_ids: \n', response)
+                if not (torch.all(response >= 0)).item():
+                    print('corresponding query to FAIL response in text form: \n', query_batch[i*fbs:(i+1)*fbs])
+                    print('corresponding query to FAIL response as input_ids: \n', query)
+                    print('response as input_ids: \n', response)
+                    
