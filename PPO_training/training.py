@@ -139,6 +139,7 @@ for epoch in range(1):
                     query = list(query)
                     query = tokenizer(query, padding=True, truncation=True, return_tensors='pt').input_ids
                     query = query.to(device)
+                    print('query: ', query)
                 except Exception as e1:
                     print('_*_'*100)
                     print('Possible indexing error at catch e1 for tokenizing query: ', e1)
@@ -150,6 +151,8 @@ for epoch in range(1):
                 try:
                     response = policy.generate(query) # will not produce text
                     response = response.to(device)
+                    print('query: ', query)
+                    break
                 except Exception as e2:
                     print('_*_'*100)
                     print('Possible indexing error at catch e2 for generating response using policy: ', e2)
