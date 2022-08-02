@@ -42,7 +42,7 @@ config = {
     "vf_coef":.1, 
 }
 
-RUN_NAME = "PPO_memcheck_july"
+RUN_NAME = "PPO_memcheck_august"
 RM_name = "RM_incr_lr_v4_no_wandb" #"RM_incr_lr_v1"
 RM_PATH = "../rewards/" + RM_name +  "/epoch-1.pth"
 PATH = "./" + RUN_NAME
@@ -120,7 +120,7 @@ for epoch in range(1):
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    for k in range(0, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(22000, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
     #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
             query_batch = sample[k:k+config["batch_size"]]
