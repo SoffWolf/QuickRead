@@ -120,15 +120,17 @@ for epoch in range(1):
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    for k in range(22016, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(0, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
     #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
             query_batch = sample[k:k+config["batch_size"]]
             logs = dict()
             timing = dict()
             t0 = time.time()
-            print('query batch: ', query_batch)
-            break
+            if k == 22016 or k == 22023:
+                print('query batch: ', query_batch)
+                # continue will skip this k and go to the next loop with k = k+8
+                continue
             query_tensors = []  # get query tensor for PPO training
             response_tensors = []
             rewards = []
