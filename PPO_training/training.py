@@ -120,14 +120,14 @@ for epoch in range(1):
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    for k in range(0, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(22016, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
     #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
             query_batch = sample[k:k+config["batch_size"]]
             logs = dict()
             timing = dict()
             t0 = time.time()
-            if k == 22016 or k == 22023:
+            if k in [22016, 22023, 29160, 29161]:
                 print('query batch: ', query_batch)
                 # continue will skip this k and go to the next loop with k = k+8
                 continue
@@ -185,8 +185,6 @@ for epoch in range(1):
                     print('Reward model config: ', reward_model)
                     print('Length of query and response in question: ', query.size(), response.size())
                     print(f'k = {k}, i = {i}')
-                    print('FAIL query: ', query)
-                    print('FAIL response: ', response)
                     query_tobe_blacklisted = query_batch[i*fbs:(i+1)*fbs]
                     queries_array_contained_black_listed_query = query_batch
                     with open("BLACK_LISTED.txt","a") as file:
@@ -243,10 +241,6 @@ for epoch in range(1):
 # HF push_to_hub:
 # policy.push_to_hub("SophieTr/"+RUN_NAME)
 # tokenizer.push_to_hub("SophieTr/"+RUN_NAME)
-file=open('error_2.txt','w')
-for items in error_lst:
-    file.writelines(items+'\n')
-file.close()
 checkpoint = {'state_dict': policy.state_dict()}
 torch.save(checkpoint, os.path.join(PATH, 'epoch-{}.pth'.format(epoch+1)))
                 
