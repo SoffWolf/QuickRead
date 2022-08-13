@@ -125,7 +125,7 @@ def prepare_fine_tuning(model_name, tokenizer, train_dataset, val_dataset=None, 
 
 
 if __name__ == '__main__':
-    dataset = load_from_disk("reddit_clean")
+    dataset = load_from_disk("../reddit_clean")
     train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
     val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
     test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
