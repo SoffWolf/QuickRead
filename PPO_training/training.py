@@ -120,14 +120,14 @@ for epoch in range(1):
     if len(sample) != df.shape[0]:
         print("IN BREAK", flush=True)
         break
-    for k in range(22016, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
+    for k in range(96624, int(np.ceil(len(sample)))-config["batch_size"], config["batch_size"]): #tqdm(range(int(np.ceil(len(sample) / config["batch_size"])))):
     #for k in range( int(np.ceil(len(sample)/2)), int(np.ceil(len(sample))-config["batch_size"]) ): #, config["batch_size"]):
         # print("k: ", k, flush=True)
             query_batch = sample[k:k+config["batch_size"]]
             logs = dict()
             timing = dict()
             t0 = time.time()
-            if k in [22016, 22023, 29160, 29161]:
+            if k in [22016, 22023, 29160, 29161, 40576, 96624]:
                 print('query batch: ', query_batch)
                 # continue will skip this k and go to the next loop with k = k+8
                 continue
