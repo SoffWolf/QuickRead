@@ -19,7 +19,7 @@ def data_in_black_list(train_texts):
             print(k + ': ' + df[k])
         
 if __name__ == '__main__':
-    dataset = load_from_disk("../../reddit_clean_v2")
+    dataset = load_from_disk("../../reddit_clean")
     train_texts, train_labels = dataset['train']['content'], dataset['train']['summary']
     val_texts, val_labels = dataset['valid']['content'], dataset['valid']['summary']
     test_texts, test_labels = dataset['test']['content'], dataset['test']['summary']
@@ -27,4 +27,4 @@ if __name__ == '__main__':
     # All the test here 
     data_in_black_list(train_texts)
     # Upload to hub after passing all tests
-    dataset.push_to_hub("SophieTr/reddit_clean")
+    dataset.push_to_hub("SophieTr/reddit_clean_v2")
