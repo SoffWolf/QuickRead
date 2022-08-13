@@ -144,7 +144,7 @@ def chat_words_map_dict_factory():
     chat_words_list = []
     for line in chat_words_str.split("\n"):
         print('line: ', line)
-        if line != "":
+        if line != "" or len(line) > 0:
             print(line.split("="))
             cw = line.split("=")[0]
             cw_expanded = line.split("=")[1]
