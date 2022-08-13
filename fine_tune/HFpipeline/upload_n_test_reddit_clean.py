@@ -10,7 +10,7 @@ def data_in_black_list(train_texts):
     # This function mainly works in train_texts 
     df = pd.DataFrame(train_texts)
     for k in df:
-        if df[k] in black_list:
+        if df[k] in pd.Series(black_list):
             print('training data contains sample in black list')
             print(df[k])
             exit()
