@@ -144,12 +144,16 @@ def chat_words_map_dict_factory():
     chat_words_list = []
     for line in chat_words_str.split("\n"):
         print('line: ', line)
-        if line != "" or len(line) > 0:
-            print(line.split("="))
-            cw = line.split("=")[0]
-            cw_expanded = line.split("=")[1]
-            chat_words_list.append(cw)
-            chat_words_map_dict[cw] = cw_expanded
+        if line != "":
+            try: 
+                cw = line.split("=")[0]
+                cw_expanded = line.split("=")[1]
+                chat_words_list.append(cw)
+                chat_words_map_dict[cw] = cw_expanded
+            except IndexError as e:
+                print('Index error:', e)
+                print(f'If condition is not suffice to catch this error, len(line) is {len(line)} and cw = line.split("=")[0] causes index error as line.split("=") is {line.split("=")}')
+                pass
     return chat_words_list, chat_words_map_dict
 
 def chat_words_conversion(example):
