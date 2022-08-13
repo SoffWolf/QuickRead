@@ -265,7 +265,7 @@ summarization_name_mapping = {
     "xglue": ("news_body", "news_title"),
     "xsum": ("document", "summary"),
     "wiki_summary": ("article", "highlights"),
-    "SophieTr/reddit_clean": ("content","summary"),
+    "SophieTr/reddit_clean_v2": ("content","summary"),
 }
 
 
