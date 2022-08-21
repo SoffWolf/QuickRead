@@ -16,8 +16,8 @@ from torch.profiler import profile, record_function, ProfilerActivity
 
 ## Global variables
 # TODO: how to make this a param for runnig code??
-RUN_NAME = "RM_incr_lr_v4_no_wandb"
-SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05"
+RUN_NAME = "RM_retrained"
+SUPERVISED_MODEL = "QuickRead/pegasus-reddit-7e05-new"
 
 # Model utils
 EPOCHS = 1
